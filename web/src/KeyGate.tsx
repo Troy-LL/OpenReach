@@ -48,8 +48,8 @@ export function KeyGate({ onSaved, onBrowseSample, sampleBusy }: Props) {
         </h1>
         <p className="text-muted mx-auto mb-8 max-w-md text-pretty">
           Reach for papers that weren’t there before. Paste your TypeSafe key to
-          rank by meaning. It stays in a local file on this machine — never sent
-          back to the browser after save.
+          rank by meaning. We do not store the key on our servers — it stays on
+          this device.
         </p>
       </div>
 
@@ -72,8 +72,8 @@ export function KeyGate({ onSaved, onBrowseSample, sampleBusy }: Props) {
               spellCheck={false}
             />
             <Description>
-              Short fragments are rejected. Use the full key from the TypeSafe
-              console.
+              Saved in this browser only. Short fragments are rejected. Use the
+              full key from the TypeSafe console.
             </Description>
             {error ? <FieldError>{error}</FieldError> : null}
           </TextField>
@@ -93,6 +93,18 @@ export function KeyGate({ onSaved, onBrowseSample, sampleBusy }: Props) {
             </Button>
           </div>
         </form>
+        <p className="text-muted mt-5 mb-0 text-center text-sm text-pretty">
+          Don’t have a key yet?{" "}
+          <a
+            className="text-accent underline-offset-2 hover:underline"
+            href="https://console.typesafe.ai/settings/keys"
+            rel="noreferrer"
+            target="_blank"
+          >
+            Get a TypeSafe key
+          </a>{" "}
+          from the console.
+        </p>
       </div>
     </Shell>
   );

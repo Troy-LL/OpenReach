@@ -52,8 +52,8 @@ function applyConstraints(intent: Intent, facets: QueryFacets): Intent {
   };
 }
 
-function resultFromSession(sessionId: string): SearchResult {
-  const session = getSession(sessionId);
+async function resultFromSession(sessionId: string): Promise<SearchResult> {
+  const session = await getSession(sessionId);
   if (!session) {
     return {
       question: "",
@@ -111,14 +111,12 @@ export async function findPapers(
     retrieve(trimmed),
     resolveIntent(trimmed, facets),
   ]);
-  const sessionId = createSearchSession(trimmed, papers, context, intent);
+  const sessionId = await createSearchSession(trimmed, papers, context, intent);
   const scoreFirst = options.scoreFirst ?? 0;
 
   if (scoreFirst > 0 && papers.length > 0) {
     if (!hasApiKey()) {
-      throw new Error(
-        "Add a TypeSafe key first. It stays on this machine.",
-      );
+      throw new Error("Add a TypeSafe key first.");
     }
     const client = createClient();
     await scoreSessionIds(
@@ -136,15 +134,15 @@ export async function scoreVisiblePapers(
   ids: string[],
 ): Promise<{ papers: RankedPaper[]; pending: number; sessionId: string }> {
   if (!hasApiKey()) {
-    throw new Error("Add a TypeSafe key first. It stays on this machine.");
+    throw new Error("Add a TypeSafe key first.");
   }
-  const session = getSession(sessionId);
+  const session = await getSession(sessionId);
   const intent = session?.intent ?? DEFAULT_INTENT;
   const client = createClient();
   const scored = await scoreSessionIds(sessionId, ids, (q, batch, ctx) =>
     rerankPapers(client, q, batch, intent, ctx),
   );
-  const next = getSession(sessionId);
+  const next = await getSession(sessionId);
   return {
     papers: scored,
     pending: next ? sessionPending(next) : 0,

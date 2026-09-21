@@ -2,7 +2,9 @@ node_modules/
 dist/
 web/dist/
 .env
+.dev.vars
 data/
 scratch/
+.wrangler/
 *.log
 .DS_Store

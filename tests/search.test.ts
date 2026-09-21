@@ -274,7 +274,7 @@ describe("findPapers retrieve path", () => {
       recencyNeed: "recent",
     });
 
-    const stored = session.getSession(result.sessionId!);
+    const stored = await session.getSession(result.sessionId!);
     expect(stored?.context).toEqual(contextArg);
 
     rerankMock.mockClear();

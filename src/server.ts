@@ -1,8 +1,10 @@
 import "dotenv/config";
 
 import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { existsSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readFile } from "node:fs/promises";
+import { join, relative, resolve } from "node:path";
 import { createApp } from "./app.js";
 import { loadLocalKey } from "./keys.js";
 import { apiListenConfig } from "./listen.js";
@@ -14,9 +16,16 @@ const serveUi =
 
 await loadLocalKey();
 
-const app = createApp({
-  staticRoot: serveUi ? staticRoot : undefined,
-});
+const app = createApp();
+
+if (serveUi) {
+  const root = relative(process.cwd(), staticRoot) || ".";
+  app.use("/*", serveStatic({ root }));
+  app.get("*", async (c) => {
+    const html = await readFile(join(staticRoot, "index.html"), "utf8");
+    return c.html(html);
+  });
+}
 
 const server = serve({ fetch: app.fetch, port, hostname }, (info) => {
   console.log(`OpenReach on http://${hostname}:${info.port}`);

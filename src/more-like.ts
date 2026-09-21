@@ -46,8 +46,8 @@ export function seedQueryFromPaper(paper: Paper): string {
   return tokens.join(" ");
 }
 
-function resultFromSession(sessionId: string): SearchResult {
-  const session = getSession(sessionId);
+async function resultFromSession(sessionId: string): Promise<SearchResult> {
+  const session = await getSession(sessionId);
   if (!session) {
     return {
       question: "",
@@ -102,14 +102,12 @@ export async function findMoreLikeThis(
       : classified;
 
   const question = `More like: ${seed.title}`;
-  const sessionId = createSearchSession(question, papers, context, intent);
+  const sessionId = await createSearchSession(question, papers, context, intent);
   const scoreFirst = options.scoreFirst ?? 0;
 
   if (scoreFirst > 0 && papers.length > 0) {
     if (!hasApiKey()) {
-      throw new Error(
-        "Add a TypeSafe key first. It stays on this machine.",
-      );
+      throw new Error("Add a TypeSafe key first.");
     }
     const client = createClient();
     await scoreSessionIds(

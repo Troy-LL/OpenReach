@@ -1,14 +1,14 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
 import { Hono } from "hono";
-import { serveStatic } from "@hono/node-server/serve-static";
+import pkg from "../package.json" with { type: "json" };
 import { formatApaList, formatBibtexList, type Citeable } from "./cite.js";
 import { DEMO_RESULT } from "./demo-data.js";
 import {
+  TYPESAFE_KEY_HEADER,
   clearLocalKey,
+  getActiveKeyStore,
   hasApiKey,
+  overlayRequestKey,
+  runWithKeyStore,
   saveLocalKey,
 } from "./keys.js";
 import { clearScoreCache, scoreCacheSize } from "./rerank.js";
@@ -37,8 +37,7 @@ export interface AppDeps {
   ) => Promise<ScoreVisibleResult>;
   moreLike?: (paper: Paper) => Promise<SearchResult>;
   suggest?: (query: string) => Promise<Suggestion[]>;
-  clearCaches?: () => void;
-  staticRoot?: string;
+  clearCaches?: () => void | Promise<void>;
 }
 
 const PAPER_SOURCES = new Set<PaperSource>([
@@ -120,10 +119,10 @@ function parseMoreLikePaper(value: unknown): Paper | null {
   };
 }
 
-export function clearAllCaches(): void {
+export async function clearAllCaches(): Promise<void> {
   clearScoreCache();
   clearRetrieveCache();
-  clearSessions();
+  await clearSessions();
 }
 
 export function createApp(deps: AppDeps = {}): Hono {
@@ -136,15 +135,13 @@ export function createApp(deps: AppDeps = {}): Hono {
   const clearCaches = deps.clearCaches ?? clearAllCaches;
   const app = new Hono();
 
-  const pkgPath = join(
-    fileURLToPath(new URL(".", import.meta.url)),
-    "..",
-    "package.json",
-  );
-  const pkg = JSON.parse(readFileSync(pkgPath, "utf8")) as {
-    name: string;
-    version: string;
-  };
+  app.use("/api/*", async (c, next) => {
+    const store = overlayRequestKey(
+      getActiveKeyStore(),
+      c.req.header(TYPESAFE_KEY_HEADER),
+    );
+    await runWithKeyStore(store, () => next());
+  });
 
   app.get("/api", (c) =>
     c.json({
@@ -190,12 +187,14 @@ export function createApp(deps: AppDeps = {}): Hono {
         {
           method: "POST",
           path: "/api/key",
-          purpose: "Save a TypeSafe API key to data/typesafe.key on this machine.",
+          purpose:
+            "Validate a TypeSafe key. On Node, also save to data/typesafe.key. Hosted Workers do not store keys.",
         },
         {
           method: "DELETE",
           path: "/api/key",
-          purpose: "Remove the locally stored TypeSafe key.",
+          purpose:
+            "Forget a Node-local key file. Browser keys are cleared in this device only.",
         },
         {
           method: "stdio",
@@ -207,13 +206,13 @@ export function createApp(deps: AppDeps = {}): Hono {
     }),
   );
 
-  app.get("/api/health", (c) =>
+  app.get("/api/health", async (c) =>
     c.json({
       ok: true,
       hasKey: hasApiKey(),
       cache: {
         scores: scoreCacheSize(),
-        sessions: sessionCacheSize(),
+        sessions: await sessionCacheSize(),
         retrieves: retrieveCacheSize(),
       },
     }),
@@ -270,10 +269,7 @@ export function createApp(deps: AppDeps = {}): Hono {
       return c.json({ error: "Question is required." }, 400);
     }
     if (!deps.search && !hasApiKey()) {
-      return c.json(
-        { error: "Add a TypeSafe key first. It stays on this machine." },
-        503,
-      );
+      return c.json({ error: "Add a TypeSafe key first." }, 503);
     }
 
     try {
@@ -356,10 +352,7 @@ export function createApp(deps: AppDeps = {}): Hono {
       return c.json({ error: "Paper title is required." }, 400);
     }
     if (!deps.moreLike && !hasApiKey()) {
-      return c.json(
-        { error: "Add a TypeSafe key first. It stays on this machine." },
-        503,
-      );
+      return c.json({ error: "Add a TypeSafe key first." }, 503);
     }
 
     try {
@@ -372,19 +365,10 @@ export function createApp(deps: AppDeps = {}): Hono {
     }
   });
 
-  app.post("/api/cache/clear", (c) => {
-    clearCaches();
+  app.post("/api/cache/clear", async (c) => {
+    await clearCaches();
     return c.json({ ok: true });
   });
-
-  if (deps.staticRoot) {
-    const root = deps.staticRoot;
-    app.use("/*", serveStatic({ root }));
-    app.get("*", async (c) => {
-      const html = await readFile(join(root, "index.html"), "utf8");
-      return c.html(html);
-    });
-  }
 
   return app;
 }

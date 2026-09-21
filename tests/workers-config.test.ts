@@ -1,0 +1,26 @@
+import { readFileSync } from "node:fs";
+import { describe, expect, it } from "vitest";
+
+const wrangler = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
+const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+
+describe("Cloudflare Workers config", () => {
+  it("deploys Worker openreach on openreach.niched.tech", () => {
+    expect(wrangler).toMatch(/"name"\s*:\s*"openreach"/);
+    expect(wrangler).toContain("openreach.niched.tech");
+    expect(wrangler).toContain("custom_domain");
+    expect(wrangler).toContain("nodejs_compat");
+    expect(wrangler).toContain("web/dist");
+    expect(wrangler).not.toMatch(/kv_namespaces/);
+    expect(wrangler.toLowerCase()).not.toContain("niche.tech");
+    expect(wrangler).not.toContain("openreach.niche.tech");
+  });
+
+  it("documents personal-account deploy on niched.tech", () => {
+    expect(readme).toContain("https://openreach.niched.tech");
+    expect(readme).toMatch(/wrangler deploy/);
+    expect(readme).toMatch(/localStorage/);
+    expect(readme).toMatch(/does not persist it/i);
+    expect(readme.toLowerCase()).not.toMatch(/niche\.tech/);
+  });
+});
