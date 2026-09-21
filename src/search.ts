@@ -1,9 +1,9 @@
-import { TtlLruCache } from "./cache.js";
+import { guessField } from "./field-guess.js";
 import { classifyIntent, createClient } from "./intent.js";
 import { hasApiKey } from "./keys.js";
 import { splitQuery, type QueryFacets } from "./query-split.js";
 import { rerankPapers } from "./rerank.js";
-import { retrieveCandidates } from "./retrieve.js";
+import { cachedRetrieveCandidates } from "./retrieve-cache.js";
 import {
   FindOptions,
   RETRIEVE_LIMITS,
@@ -12,7 +12,6 @@ import {
 import {
   createSearchSession,
   getSession,
-  retrieveCacheKey,
   scoreSessionIds,
   sessionPapers,
   sessionPending,
@@ -23,16 +22,7 @@ import type { Intent, Paper, RankedPaper, ScoreContext, SearchResult } from "./t
 export type { SearchResult } from "./types.js";
 export type { FindOptions };
 export { RETRIEVE_LIMITS, gateRetrieved };
-
-const retrieveCache = new TtlLruCache<Paper[]>(80, 10 * 60 * 1000);
-
-export function retrieveCacheSize(): number {
-  return retrieveCache.size;
-}
-
-export function clearRetrieveCache(): void {
-  retrieveCache.clear();
-}
+export { clearRetrieveCache, retrieveCacheSize, runWithRetrieveBucket } from "./retrieve-cache.js";
 
 function scoreContextFromFacets(facets: QueryFacets): ScoreContext {
   return {
@@ -76,16 +66,16 @@ async function resultFromSession(sessionId: string): Promise<SearchResult> {
   };
 }
 
-async function retrieve(question: string): Promise<Paper[]> {
+async function retrieve(
+  question: string,
+  field: Intent["field"],
+): Promise<Paper[]> {
   const facets = splitQuery(question);
-  const key = retrieveCacheKey(question);
-  const cached = retrieveCache.get(key);
-  if (cached) return cached;
-
-  const raw = await retrieveCandidates(question, RETRIEVE_LIMITS);
-  const papers = gateRetrieved(question, raw, facets);
-  retrieveCache.set(key, papers);
-  return papers;
+  const raw = await cachedRetrieveCandidates(question, {
+    ...RETRIEVE_LIMITS,
+    field,
+  });
+  return gateRetrieved(question, raw, facets);
 }
 
 async function resolveIntent(question: string, facets: QueryFacets): Promise<Intent> {
@@ -107,8 +97,9 @@ export async function findPapers(
 
   const facets = splitQuery(trimmed);
   const context = scoreContextFromFacets(facets);
+  const field = guessField(trimmed);
   const [papers, intent] = await Promise.all([
-    retrieve(trimmed),
+    retrieve(trimmed, field),
     resolveIntent(trimmed, facets),
   ]);
   const sessionId = await createSearchSession(trimmed, papers, context, intent);

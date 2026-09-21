@@ -2,8 +2,7 @@ import type { Paper } from "./types.js";
 import { authorsFromStringList } from "./authors.js";
 import { normalizePmcid, resolvePaperUrl } from "./paper-url.js";
 import { sanitizeSearchQuery } from "./query.js";
-
-const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
+import { fetchUpstreamJson, fetchUpstreamText } from "./upstream.js";
 const ARXIV = "https://export.arxiv.org/api/query";
 const EUROPE_PMC =
   "https://www.ebi.ac.uk/europepmc/webservices/rest/search";
@@ -150,17 +149,9 @@ export async function searchArxiv(
     `${ARXIV}?search_query=${searchQuery}` +
     `&start=0&max_results=${maxResults}&sortBy=relevance&sortOrder=descending`;
 
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT, Accept: "application/atom+xml" },
-  });
-  if (res.status === 429) return [];
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `HTTP ${res.status} for arXiv${body ? `: ${body.slice(0, 200)}` : ""}`,
-    );
-  }
-  return parseArxivAtom(await res.text());
+  const xml = await fetchUpstreamText(url, { Accept: "application/atom+xml" });
+  if (!xml) return [];
+  return parseArxivAtom(xml);
 }
 
 export async function searchEuropePmc(
@@ -174,22 +165,8 @@ export async function searchEuropePmc(
     `${EUROPE_PMC}?query=${encodeURIComponent(q)}` +
     `&format=json&pageSize=${pageSize}&resultType=core`;
 
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": USER_AGENT,
-    },
-  });
-  if (res.status === 429) return [];
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `HTTP ${res.status} for Europe PMC${body ? `: ${body.slice(0, 200)}` : ""}`,
-    );
-  }
-
-  const data = (await res.json()) as {
+  const data = await fetchUpstreamJson<{
     resultList?: { result?: EuropePmcHit[] };
-  };
-  return parseEuropePmcResults(data.resultList?.result ?? []);
+  }>(url);
+  return parseEuropePmcResults(data?.resultList?.result ?? []);
 }

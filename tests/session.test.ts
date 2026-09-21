@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Paper, RankedPaper } from "../src/types.js";
 import {
   createBucketSessionBackend,
+  createCachedBucketSessionBackend,
   createSearchSession,
   deserializeSession,
   getSession,
@@ -87,6 +88,31 @@ describe("search session", () => {
       expect(serializeSession(stored!).length).toBeGreaterThan(10);
       const session = await getSession(id);
       expect(session?.papers.get("a")?.title).toBe("Title a");
+    });
+  });
+
+  it("serves a second session get from isolate memory", async () => {
+    let gets = 0;
+    const map = new Map<string, string>();
+    const backend = createCachedBucketSessionBackend({
+      get: async (id) => {
+        gets += 1;
+        return map.get(id) ?? null;
+      },
+      put: async (id, value) => {
+        map.set(id, value);
+      },
+      delete: async (id) => {
+        map.delete(id);
+      },
+    });
+
+    await runWithSessionBackend(backend, async () => {
+      const id = await createSearchSession("residuals", [paper("a")]);
+      gets = 0;
+      await getSession(id);
+      await getSession(id);
+      expect(gets).toBe(0);
     });
   });
 });

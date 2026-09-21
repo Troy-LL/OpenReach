@@ -66,7 +66,7 @@ describe("gateByBm25", () => {
   });
 
   it("exposes default cap and minScore constants", () => {
-    expect(DEFAULT_BM25_CAP).toBe(400);
+    expect(DEFAULT_BM25_CAP).toBe(200);
     expect(DEFAULT_BM25_MIN_SCORE).toBe(0);
   });
 

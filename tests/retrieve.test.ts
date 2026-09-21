@@ -1,8 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   invertAbstract,
   OPENALEX_WORK_SELECT,
   openAlexToPaper,
+  RELATED_SKIP_AFTER,
+  retrieveCandidates,
   S2_PAPER_FIELDS,
   s2ToPaper,
 } from "../src/retrieve.js";
@@ -163,3 +165,142 @@ describe("Semantic Scholar outbound URL", () => {
     expect(paper.url).toBe("https://doi.org/10.5555/3295222.3295349");
   });
 });
+
+function emptyPayload(url: string): { body: string; type: string } {
+  if (url.includes("arxiv.org")) {
+    return { body: "<feed></feed>", type: "application/atom+xml" };
+  }
+  if (url.includes("efetch.fcgi")) {
+    return { body: "<PubmedArticleSet></PubmedArticleSet>", type: "application/xml" };
+  }
+  if (url.includes("esearch.fcgi")) {
+    return {
+      body: JSON.stringify({ esearchresult: { idlist: [] } }),
+      type: "application/json",
+    };
+  }
+  if (url.includes("semanticscholar")) {
+    return { body: JSON.stringify({ data: [] }), type: "application/json" };
+  }
+  if (url.includes("crossref")) {
+    return {
+      body: JSON.stringify({ message: { items: [] } }),
+      type: "application/json",
+    };
+  }
+  if (url.includes("inspirehep")) {
+    return { body: JSON.stringify({ hits: { hits: [] } }), type: "application/json" };
+  }
+  if (url.includes("ies.ed.gov")) {
+    return {
+      body: JSON.stringify({ response: { docs: [] } }),
+      type: "application/json",
+    };
+  }
+  if (url.includes("doaj.org")) {
+    return { body: JSON.stringify({ results: [] }), type: "application/json" };
+  }
+  if (url.includes("openaire.eu")) {
+    return {
+      body: JSON.stringify({ response: { results: { result: [] } } }),
+      type: "application/json",
+    };
+  }
+  if (url.includes("plos.org")) {
+    return {
+      body: JSON.stringify({ response: { docs: [] } }),
+      type: "application/json",
+    };
+  }
+  if (url.includes("europepmc") || url.includes("ebi.ac.uk")) {
+    return {
+      body: JSON.stringify({ resultList: { result: [] } }),
+      type: "application/json",
+    };
+  }
+  return { body: JSON.stringify({ results: [] }), type: "application/json" };
+}
+
+describe("retrieveCandidates fan-out", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("skips biomed indexes for a cs field and skips related after enough unique hits", async () => {
+    expect(RELATED_SKIP_AFTER).toBe(80);
+    const urls: string[] = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        urls.push(url);
+        if (url.includes("api.openalex.org/works") && url.includes("search=")) {
+          const results = Array.from({ length: 90 }, (_, i) => ({
+            id: `https://openalex.org/W${i}`,
+            title: `Paper ${i}`,
+            related_works: ["https://openalex.org/W999"],
+          }));
+          return new Response(JSON.stringify({ results }), {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          });
+        }
+        const { body, type } = emptyPayload(url);
+        return new Response(body, {
+          status: 200,
+          headers: { "Content-Type": type },
+        });
+      }),
+    );
+
+    const papers = await retrieveCandidates("transformer attention", {
+      field: "cs",
+      keywordLimit: 90,
+      relatedLimit: 20,
+    });
+    expect(papers.length).toBeGreaterThanOrEqual(80);
+    expect(urls.some((url) => /pubmed|ncbi|europepmc|ebi\.ac\.uk|eric|inspirehep|plos/i.test(url))).toBe(
+      false,
+    );
+    expect(urls.some((url) => url.includes("arxiv.org"))).toBe(true);
+    expect(urls.some((url) => url.includes("filter=ids.openalex"))).toBe(false);
+  });
+
+  it("keeps papers from healthy indexes when one upstream fetch throws", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes("semanticscholar")) {
+          throw new Error("S2 down");
+        }
+        if (url.includes("api.openalex.org/works") && url.includes("search=")) {
+          return new Response(
+            JSON.stringify({
+              results: [
+                {
+                  id: "https://openalex.org/W1",
+                  title: "Kept paper",
+                  related_works: [],
+                },
+              ],
+            }),
+            { status: 200, headers: { "Content-Type": "application/json" } },
+          );
+        }
+        const { body, type } = emptyPayload(url);
+        return new Response(body, {
+          status: 200,
+          headers: { "Content-Type": type },
+        });
+      }),
+    );
+
+    const papers = await retrieveCandidates("transformer attention", {
+      field: "cs",
+      relatedSkipAfter: 1,
+    });
+    expect(papers.some((paper) => paper.title === "Kept paper")).toBe(true);
+  });
+});
+

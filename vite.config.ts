@@ -22,5 +22,26 @@ export default defineConfig({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("node_modules/react-dom") ||
+            id.includes("node_modules/react/")
+          ) {
+            return "react";
+          }
+          if (
+            id.includes("@heroui") ||
+            id.includes("@react-aria") ||
+            id.includes("@react-stately") ||
+            id.includes("@internationalized")
+          ) {
+            return "heroui";
+          }
+          return undefined;
+        },
+      },
+    },
   },
 });

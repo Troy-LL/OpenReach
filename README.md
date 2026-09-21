@@ -47,7 +47,7 @@ npm run find -- --demo
 | PLOS | Open-access life / computational biology journals |
 | ERIC | Education / social-science literature |
 
-When OpenReach can tell which field a question belongs to, it runs the specialty indexes for that field. When no field is clear, every index runs so that coverage stays wide.
+When OpenReach can tell which field a question belongs to, it runs the specialty indexes for that field. When no field is clear, every index runs so that coverage stays wide. Field gating uses a conservative local guess so retrieve does not wait on Jev; mixed or unclear questions stay wide. Each index fetch times out at 8 seconds, and a dead index does not fail the search. The OpenAlex related-works follow-up is skipped once the first wave already has enough unique papers. The gated session pool is capped at 200 papers.
 
 ## HTTP for agents
 
@@ -67,6 +67,8 @@ Under either `npm run dev` or `npm start`, the API listens on port 3000, which y
 | POST | `/mcp` | Remote MCP Streamable HTTP (key via `X-Typesafe-Key` or Bearer) |
 
 Live search and scoring need a key. The hosted UI sends it on Jev calls via the `X-Typesafe-Key` header from `localStorage`. Locally you can also set `TYPESAFE_API_KEY` or save through `POST /api/key` / the UI to `data/typesafe.key` (gitignored). Keys should never be committed.
+
+Search, score, and more-like JSON truncate abstracts to 480 characters on the wire. The session still keeps the full abstract for Jev. MCP tool payloads already omit abstracts (`compactPaper`). `GET /api/demo` and `GET /api/suggest` send `Cache-Control: public, max-age=60`.
 
 ## MCP
 
@@ -148,7 +150,7 @@ If deploy says the zone is missing or the custom domain cannot be attached, fini
 2. Hostname: `openreach.niched.tech`
 3. Cloudflare issues the certificate and a proxied record on `niched.tech`.
 
-No secret is required for TypeSafe / Jev. Visitors paste their own key; it stays in the browser and is sent only on live Jev requests. OpenReach does not persist it in Durable Objects, KV, or R2. The Durable Object binding is for short-lived search sessions (retrieved papers waiting to be scored), not keys.
+No secret is required for TypeSafe / Jev. Visitors paste their own key; it stays in the browser and is sent only on live Jev requests. OpenReach does not persist it in Durable Objects, KV, or R2. The Durable Object binding is a sharded session and retrieve cache (isolate memory is the L1), not keys. Hashed SPA assets under `/assets/*` send `Cache-Control: public, max-age=31536000, immutable`.
 
 Optional:
 

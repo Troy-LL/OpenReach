@@ -127,7 +127,10 @@ describe("findMoreLikeThis", () => {
       scoreFirst: DEFAULT_PAGE_SIZE,
     });
 
-    expect(retrieveCandidatesMock).toHaveBeenCalled();
+    expect(retrieveCandidatesMock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ field: expect.any(String) }),
+    );
     const poolIds = result.papers.map((p) => p.id);
     expect(poolIds).not.toContain("seed-id");
     expect(poolIds).not.toContain("seed-dup-id");

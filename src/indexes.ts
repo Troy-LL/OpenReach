@@ -1,8 +1,7 @@
 import type { Paper, PaperSource } from "./types.js";
 import { authorsFromStringList, cleanAuthorNames, displayNameFromParts } from "./authors.js";
 import { sanitizeSearchQuery } from "./query.js";
-
-const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
+import { fetchUpstreamJson, fetchUpstreamText } from "./upstream.js";
 const CROSSREF = "https://api.crossref.org/works";
 const INSPIRE = "https://inspirehep.net/api/literature";
 const ERIC = "https://api.ies.ed.gov/eric/";
@@ -400,20 +399,7 @@ export function parsePreprintHits(hits: PreprintHit[]): Paper[] {
 }
 
 async function getJson<T>(url: string): Promise<T | null> {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": USER_AGENT,
-    },
-  });
-  if (res.status === 429) return null;
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `HTTP ${res.status} for ${url}${body ? `: ${body.slice(0, 200)}` : ""}`,
-    );
-  }
-  return (await res.json()) as T;
+  return fetchUpstreamJson<T>(url);
 }
 
 export async function searchCrossref(
@@ -449,17 +435,9 @@ export async function searchPubmed(
 
   const fetchUrl =
     `${PUBMED_FETCH}?db=pubmed&id=${ids.join(",")}&retmode=xml`;
-  const res = await fetch(fetchUrl, {
-    headers: { "User-Agent": USER_AGENT, Accept: "application/xml" },
-  });
-  if (res.status === 429) return [];
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `HTTP ${res.status} for PubMed fetch${body ? `: ${body.slice(0, 200)}` : ""}`,
-    );
-  }
-  return parsePubmedXml(await res.text());
+  const xml = await fetchUpstreamText(fetchUrl, { Accept: "application/xml" });
+  if (!xml) return [];
+  return parsePubmedXml(xml);
 }
 
 export async function searchInspire(

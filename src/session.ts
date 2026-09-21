@@ -213,6 +213,41 @@ export async function sessionCacheSize(): Promise<number> {
   return backend().size();
 }
 
-export function retrieveCacheKey(query: string): string {
-  return cacheKey(["retrieve", query]);
+export function retrieveCacheKey(
+  query: string,
+  field?: string,
+): string {
+  return cacheKey(["retrieve", query, field ?? ""]);
+}
+
+/** Isolate-memory L1 in front of a Durable Object / text bucket. */
+export function createCachedBucketSessionBackend(
+  bucket: SessionBucket,
+): SessionBackend {
+  const l1 = new TtlLruCache<SearchSession>(MAX_SESSIONS, SESSION_TTL_MS);
+  const remote = createBucketSessionBackend(bucket);
+  return {
+    async get(id) {
+      const hit = l1.get(id);
+      if (hit) return hit;
+      const miss = await remote.get(id);
+      if (miss) l1.set(id, miss);
+      return miss;
+    },
+    async set(id, session) {
+      l1.set(id, session);
+      await remote.set(id, session);
+    },
+    async delete(id) {
+      l1.delete(id);
+      await remote.delete(id);
+    },
+    async clear() {
+      l1.clear();
+      await remote.clear();
+    },
+    async size() {
+      return l1.size;
+    },
+  };
 }

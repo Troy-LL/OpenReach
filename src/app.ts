@@ -28,6 +28,7 @@ import {
   scoreVisiblePapers,
 } from "./search.js";
 import { sessionCacheSize } from "./session.js";
+import { slimRankedPapers, slimSearchResult } from "./slim.js";
 import { suggestQueries, type Suggestion } from "./suggest.js";
 import type { Paper, PaperSource, RankedPaper, SearchResult } from "./types.js";
 
@@ -257,7 +258,10 @@ export function createApp(deps: AppDeps = {}): Hono {
     }),
   );
 
-  app.get("/api/demo", (c) => c.json(DEMO_RESULT));
+  app.get("/api/demo", (c) => {
+    c.header("Cache-Control", "public, max-age=60");
+    return c.json(DEMO_RESULT);
+  });
 
   app.get("/api/suggest", async (c) => {
     const q = (c.req.query("q") ?? "").trim();
@@ -266,6 +270,7 @@ export function createApp(deps: AppDeps = {}): Hono {
     }
     try {
       const suggestions = await suggest(q);
+      c.header("Cache-Control", "public, max-age=60");
       return c.json({ suggestions });
     } catch (err) {
       return c.json({ error: publicErrorMessage(err, "Suggest failed.") }, 500);
@@ -312,7 +317,7 @@ export function createApp(deps: AppDeps = {}): Hono {
 
     try {
       const result = await search(question);
-      return c.json(result);
+      return c.json(slimSearchResult(result));
     } catch (err) {
       const raw = err instanceof Error ? err.message : "";
       const status = /API_KEY/i.test(raw) ? 503 : 500;
@@ -342,7 +347,11 @@ export function createApp(deps: AppDeps = {}): Hono {
     }
 
     try {
-      return c.json(await scoreVisible(sessionId, ids));
+      const result = await scoreVisible(sessionId, ids);
+      return c.json({
+        ...result,
+        papers: slimRankedPapers(result.papers),
+      });
     } catch (err) {
       const raw = err instanceof Error ? err.message : "";
       const status = /expired/i.test(raw)
@@ -395,7 +404,7 @@ export function createApp(deps: AppDeps = {}): Hono {
 
     try {
       const result = await moreLike(paper);
-      return c.json(result);
+      return c.json(slimSearchResult(result));
     } catch (err) {
       const raw = err instanceof Error ? err.message : "";
       const status = /API_KEY/i.test(raw) ? 503 : 500;
