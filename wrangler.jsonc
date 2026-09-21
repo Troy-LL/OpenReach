@@ -18,13 +18,14 @@
   "migrations": [
     { "tag": "v1", "new_sqlite_classes": ["OpenReachStore"] }
   ],
-  "routes": [
-    {
-      "pattern": "openreach.niched.tech",
-      "custom_domain": true
-    }
-  ],
   "observability": {
     "enabled": true
-  }
+  },
+  "workers_dev": true,
+  "routes": [
+    {
+      "pattern": "openreach.niche.tech",
+      "custom_domain": true
+    }
+  ]
 }
