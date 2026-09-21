@@ -22,6 +22,10 @@ const indexHtml = readFileSync(new URL("../web/index.html", import.meta.url), "u
 const filters = readFileSync(new URL("../web/src/Filters.tsx", import.meta.url), "utf8");
 const shell = readFileSync(new URL("../web/src/Shell.tsx", import.meta.url), "utf8");
 const keyGate = readFileSync(new URL("../web/src/KeyGate.tsx", import.meta.url), "utf8");
+const pagination = readFileSync(
+  new URL("../web/src/PaginationBar.tsx", import.meta.url),
+  "utf8",
+);
 
 describe("phone and desktop chrome", () => {
   it("lets the search query flex the full field with ellipsis only on overflow", () => {
@@ -92,14 +96,51 @@ describe("phone and desktop chrome", () => {
     expect(shell).toContain("safe-area-inset-bottom");
   });
 
-  it("clamps mobile abstracts and seats the select checkbox on the card", () => {
+  it("clamps mobile abstracts and seats a visible 44px select beside the figure", () => {
     expect(paperCard).toContain("line-clamp-3");
     expect(paperCard).toMatch(/text-base/);
     expect(paperCard).toMatch(/p-3/);
     expect(paperCard).toMatch(/h-7 w-7/);
     expect(paperCard).toMatch(/Show more/);
     expect(paperCard).toMatch(/type="checkbox"/);
+    expect(paperCard).toContain("paper-select");
+    expect(paperCard).not.toMatch(/absolute top-3 right-3/);
+    expect(paperCard).not.toMatch(/accent-\[var\(--accent\)\]/);
+    expect(styles).toContain(".paper-select");
+    expect(styles).toMatch(/\.paper-select[\s\S]*2\.75rem/);
+    expect(styles).toMatch(/\.paper-select-box[\s\S]*border/);
     expect(app).not.toMatch(/aria-label=\{`Select \$\{paper\.title\}`\}/);
+  });
+
+  it("lets phone score chips wrap or compact instead of clipping Review", () => {
+    expect(paperCard).not.toMatch(/max-md:flex-nowrap/);
+    expect(paperCard).not.toMatch(/max-md:overflow-hidden/);
+    expect(paperCard).toMatch(/flex-wrap/);
+    expect(paperCard).toMatch(/max-md:hidden/);
+    expect(paperCard).toContain("Rel ");
+    expect(paperCard).toContain("Method ");
+    expect(paperCard).toContain("Evid ");
+    expect(paperCard).toContain("Details");
+    expect(paperCard).toMatch(/overflow-x-clip/);
+    expect(paperCard).toMatch(/min-w-0/);
+  });
+
+  it("gives phone controls a 44px tap and keeps pending tally visible", () => {
+    expect(paperCard).toMatch(/Show more[\s\S]*min-h-11|min-h-11[\s\S]*Show more/);
+    expect(exportBar).toMatch(/min-h-11/);
+    expect(pagination).toMatch(/min-h-11/);
+    expect(app).toMatch(/More like this[\s\S]*min-h-11|min-h-11[\s\S]*More like this/);
+    expect(gatedHint).toMatch(/min-h-11/);
+    expect(exportBar).toContain("waiting");
+    expect(exportBar).not.toMatch(/max-sm:hidden/);
+  });
+
+  it("keeps filter year fields usable on phone without iOS input zoom", () => {
+    expect(filters).toContain('inputMode="numeric"');
+    expect(filters).toContain("Year");
+    expect(styles).toMatch(/max-width:\s*767px/);
+    expect(styles).toMatch(/font-size:\s*1rem/);
+    expect(styles).toMatch(/min-height:\s*2\.75rem/);
   });
 
   it("compacts the export toolbar to a mono tally and drops the empty-state label", () => {

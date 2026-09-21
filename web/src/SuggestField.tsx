@@ -128,8 +128,8 @@ export function SuggestField({
                   type="button"
                   className={
                     selected
-                      ? "bg-surface-secondary flex w-full flex-col gap-0.5 rounded-md px-3 py-2 text-left"
-                      : "hover:bg-surface-secondary flex w-full flex-col gap-0.5 rounded-md px-3 py-2 text-left"
+                      ? "bg-surface-secondary flex min-h-11 w-full flex-col justify-center gap-0.5 rounded-md px-3 py-2 text-left"
+                      : "hover:bg-surface-secondary flex min-h-11 w-full flex-col justify-center gap-0.5 rounded-md px-3 py-2 text-left"
                   }
                   onMouseEnter={() => setActive(index)}
                   onMouseDown={(event) => {

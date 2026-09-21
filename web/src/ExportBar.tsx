@@ -51,14 +51,12 @@ export function ExportBar({
   return (
     <div
       aria-label="Export selected papers"
-      className="mb-2 flex flex-wrap items-center gap-2"
+      className="mb-2 flex min-w-0 flex-wrap items-center gap-2"
       role="toolbar"
     >
       <span className="font-mono text-sm tabular-nums">
         {judged}/{total}
-        {pending > 0 ? (
-          <span className="max-sm:hidden">{` · ${pending} waiting`}</span>
-        ) : null}
+        {pending > 0 ? ` · ${pending} waiting` : null}
         {` · p${page}/${totalPages}`}
       </span>
       {papers.length > 0 ? (
@@ -69,7 +67,7 @@ export function ExportBar({
           <span className="inline-flex">
             <Button
               aria-label="Export selected papers as APA"
-              className="pressable"
+              className="pressable min-h-11"
               isDisabled={disabled}
               size="sm"
               variant="secondary"
@@ -86,7 +84,7 @@ export function ExportBar({
           <span className="inline-flex">
             <Button
               aria-label="Export selected papers as BibTeX"
-              className="pressable"
+              className="pressable min-h-11"
               isDisabled={disabled}
               size="sm"
               variant="secondary"

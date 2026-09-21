@@ -287,7 +287,7 @@ export function App() {
       <Shell
         centered
         trailing={
-          <Button className="pressable" size="sm" variant="ghost" onPress={() => void removeLocalKey()}>
+          <Button className="pressable min-h-11" size="sm" variant="ghost" onPress={() => void removeLocalKey()}>
             Remove key
           </Button>
         }
@@ -313,7 +313,7 @@ export function App() {
         ) : null}
         <div className="enter enter-2 mt-8 flex justify-center">
           <Button
-            className="pressable"
+            className="pressable min-h-11"
             isDisabled={busy}
             variant="secondary"
             onPress={() => void run(loadDemo)}
@@ -331,7 +331,7 @@ export function App() {
     <Shell
       plate={busy ? "Retrieving" : sampleMode ? "Sample" : "Results"}
       trailing={
-        <Button className="pressable" size="sm" variant="ghost" onPress={resetToLanding}>
+        <Button className="pressable min-h-11" size="sm" variant="ghost" onPress={resetToLanding}>
           New search
         </Button>
       }
@@ -360,8 +360,8 @@ export function App() {
         ) : null}
       </div>
 
-      <div className="grid items-start gap-3 md:grid-cols-[16rem_1fr] md:gap-7">
-        <aside>
+      <div className="grid min-w-0 items-start gap-3 md:grid-cols-[16rem_1fr] md:gap-7">
+        <aside className="min-w-0">
           {busy || !result ? (
             <FilterSkeleton />
           ) : (
@@ -373,7 +373,7 @@ export function App() {
             />
           )}
         </aside>
-        <main>
+        <main className="min-w-0">
           {busy ? (
             <>
               <p className="figure mb-4" role="status">
@@ -390,7 +390,7 @@ export function App() {
               <p className="text-muted mb-4 max-w-prose text-pretty">
                 Reset the filters, or loosen the year and score sliders.
               </p>
-              <Button className="pressable" variant="secondary" onPress={() => setFilters(DEFAULT_FILTERS)}>
+              <Button className="pressable min-h-11" variant="secondary" onPress={() => setFilters(DEFAULT_FILTERS)}>
                 Reset filters
               </Button>
             </EmptyState>
@@ -419,11 +419,11 @@ export function App() {
                       selectionDisabled={busy}
                       onSelectedChange={(checked) => toggleSelected(paper.id, checked)}
                     />
-                    <div className="mt-1 flex items-center justify-end">
+                    <div className="mt-1 flex min-h-11 items-center justify-end">
                       {hasKey ? (
                         <Button
                           aria-label={`Find papers more like ${paper.title}`}
-                          className="pressable"
+                          className="pressable min-h-11"
                           isDisabled={busy}
                           size="sm"
                           variant="ghost"
