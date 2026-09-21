@@ -56,3 +56,18 @@ export async function scoreVisible(
 export async function clearServerCache(): Promise<void> {
   await fetch("/api/cache/clear", { method: "POST" });
 }
+
+export interface Suggestion {
+  id: string;
+  text: string;
+  hint: string | null;
+  kind: "work" | "topic" | "concept";
+}
+
+export async function fetchSuggestions(query: string): Promise<Suggestion[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+  const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}`);
+  const body = await readJson<{ suggestions: Suggestion[] }>(res);
+  return body.suggestions ?? [];
+}

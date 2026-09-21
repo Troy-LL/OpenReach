@@ -35,6 +35,8 @@ The first screen asks for a TypeSafe / Jev key and writes it to `data/typesafe.k
 
 `Browse sample results` exercises filters without a live Jev call.
 
+Typing in the search box shows OpenAlex autocomplete suggestions (papers, topics, concepts). Arrow keys move, Enter selects, Escape closes.
+
 ```bash
 npm test
 npm run typecheck

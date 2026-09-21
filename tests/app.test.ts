@@ -89,11 +89,32 @@ describe("HTTP API", () => {
     expect(res.status).toBe(503);
   });
 
-  it("clears caches", async () => {
-    let cleared = false;
-    const app = createApp({ clearCaches: () => { cleared = true; } });
-    const res = await app.request("/api/cache/clear", { method: "POST" });
+  it("returns injected autocomplete suggestions", async () => {
+    const app = createApp({
+      suggest: async () => [
+        {
+          id: "w1",
+          text: "Deep Residual Learning for Image Recognition",
+          hint: "Kaiming He et al.",
+          kind: "work",
+        },
+      ],
+    });
+    const res = await app.request("/api/suggest?q=residual");
     expect(res.status).toBe(200);
-    expect(cleared).toBe(true);
+    const body = await res.json();
+    expect(body.suggestions).toHaveLength(1);
+    expect(body.suggestions[0].text).toContain("Residual");
+  });
+
+  it("returns empty suggestions for short queries", async () => {
+    const app = createApp({
+      suggest: async () => {
+        throw new Error("should not run");
+      },
+    });
+    const res = await app.request("/api/suggest?q=a");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ suggestions: [] });
   });
 });

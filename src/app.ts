@@ -16,6 +16,7 @@ import {
   scoreVisiblePapers,
 } from "./search.js";
 import { clearSessions, sessionCacheSize } from "./session.js";
+import { suggestQueries, type Suggestion } from "./suggest.js";
 import type { RankedPaper, SearchResult } from "./types.js";
 
 export interface ScoreVisibleResult {
@@ -30,6 +31,7 @@ export interface AppDeps {
     sessionId: string,
     ids: string[],
   ) => Promise<ScoreVisibleResult>;
+  suggest?: (query: string) => Promise<Suggestion[]>;
   clearCaches?: () => void;
   staticRoot?: string;
 }
@@ -43,6 +45,7 @@ export function clearAllCaches(): void {
 export function createApp(deps: AppDeps = {}): Hono {
   const search = deps.search ?? ((q: string) => findPapers(q, { scoreFirst: 0 }));
   const scoreVisible = deps.scoreVisible ?? scoreVisiblePapers;
+  const suggest = deps.suggest ?? ((q: string) => suggestQueries(q));
   const clearCaches = deps.clearCaches ?? clearAllCaches;
   const app = new Hono();
 
@@ -60,6 +63,19 @@ export function createApp(deps: AppDeps = {}): Hono {
 
   app.get("/api/demo", (c) => c.json(DEMO_RESULT));
 
+  app.get("/api/suggest", async (c) => {
+    const q = (c.req.query("q") ?? "").trim();
+    if (q.length < 2) {
+      return c.json({ suggestions: [] });
+    }
+    try {
+      const suggestions = await suggest(q);
+      return c.json({ suggestions });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Suggest failed.";
+      return c.json({ error: message }, 500);
+    }
+  });
   app.post("/api/key", async (c) => {
     let body: { key?: unknown };
     try {

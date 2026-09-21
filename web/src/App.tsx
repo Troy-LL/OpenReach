@@ -18,6 +18,7 @@ import { PaperCard } from "./PaperCard";
 import { ResultList } from "./ResultList";
 import { Shell } from "./Shell";
 import { BootSkeleton, FilterSkeleton, SearchSkeleton } from "./Skeletons";
+import { SuggestField } from "./SuggestField";
 
 function mergeScored(current: RankedPaper[], incoming: RankedPaper[]): RankedPaper[] {
   if (incoming.length === 0) return current;
@@ -92,6 +93,12 @@ export function App() {
     void run(() => searchPapers(question));
   }
 
+  function onSuggestPick(text: string) {
+    const question = text.trim();
+    if (!question || busy || !hasKey) return;
+    void run(() => searchPapers(question));
+  }
+
   const resetToLanding = useCallback(() => {
     setResult(null);
     setFilters(DEFAULT_FILTERS);
@@ -156,22 +163,29 @@ export function App() {
 
   const searchForm = (
     <form className="flex flex-col gap-3 sm:flex-row sm:items-center" onSubmit={onSubmit}>
-      <SearchField
-        aria-label="Research question"
-        autoFocus={landing}
-        className="min-w-0 flex-1"
-        fullWidth
-        isDisabled={busy}
-        name="question"
+      <SuggestField
+        disabled={busy || !hasKey}
         value={draft}
         onChange={setDraft}
+        onPick={onSuggestPick}
       >
-        <SearchField.Group>
-          <SearchField.SearchIcon />
-          <SearchField.Input placeholder="Ask anything about the literature…" />
-          <SearchField.ClearButton />
-        </SearchField.Group>
-      </SearchField>
+        <SearchField
+          aria-label="Research question"
+          autoFocus={landing}
+          className="min-w-0 w-full flex-1"
+          fullWidth
+          isDisabled={busy}
+          name="question"
+          value={draft}
+          onChange={setDraft}
+        >
+          <SearchField.Group>
+            <SearchField.SearchIcon />
+            <SearchField.Input placeholder="Ask anything about the literature…" />
+            <SearchField.ClearButton />
+          </SearchField.Group>
+        </SearchField>
+      </SuggestField>
       <Button
         className="pressable shrink-0"
         isDisabled={!draft.trim() || !hasKey}
