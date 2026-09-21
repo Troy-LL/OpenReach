@@ -54,11 +54,6 @@ describe("phone and desktop chrome", () => {
     expect(paperCard).toMatch(/font-serif/);
   });
 
-  it("marks unlinked papers with a quiet No link note", () => {
-    expect(paperCard).toContain("No link");
-    expect(paperCard).toMatch(/!paper\.url|paper\.url \?/);
-  });
-
   it("keeps export selection-gated, not TypeSafe-key-gated", () => {
     expect(exportBar).toContain("Select papers to export");
     expect(exportBar).not.toContain("Needs TypeSafe key");

@@ -2,14 +2,14 @@ import { describe, expect, it } from "vitest";
 import { TYPESAFE_KEY_HEADER } from "../src/key-format.js";
 import {
   HOSTED_MCP_URL,
-  remoteMcpSnippet,
+  cursorMcpSnippet,
   remoteMcpUrl,
 } from "../src/mcp-connect.js";
 
-describe("Remote MCP snippet", () => {
+describe("Cursor MCP snippet", () => {
   it("points at the hosted URL and the KeyGate header", () => {
     const key = "apikey_browser_localstorage_1234567890";
-    const snippet = remoteMcpSnippet(key);
+    const snippet = cursorMcpSnippet(key);
     const parsed = JSON.parse(snippet) as {
       mcpServers: {
         openreach: { url: string; headers: Record<string, string> };
