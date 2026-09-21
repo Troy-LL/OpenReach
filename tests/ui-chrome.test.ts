@@ -31,15 +31,18 @@ describe("phone and desktop chrome", () => {
   });
 
   it("keeps sample onboarding to one banner plus one add-key link", () => {
-    expect(app).toContain("Add a TypeSafe key");
+    expect(app).toMatch(/>\s*Add key\s*</);
+    expect(app).not.toContain("Add a TypeSafe key");
     expect(app).not.toMatch(/Sample results only/);
-    expect(app.match(/Add a TypeSafe key/g)?.length).toBe(1);
+    expect(app.match(/>\s*Add key\s*</g)?.length).toBe(1);
   });
 
   it("marks gated more-like-this with a lock chip instead of a dead button", () => {
     expect(app).toContain("KeyLockedChip");
     expect(app).toContain("More like this");
     expect(gatedHint).toContain("Needs TypeSafe key");
+    expect(gatedHint).not.toMatch(/<LockIcon \/>\s*Needs TypeSafe key/);
+    expect(gatedHint).toMatch(/aria-label="Needs TypeSafe key"|sr-only/);
   });
 
   it("sets paper titles in Source Serif", () => {

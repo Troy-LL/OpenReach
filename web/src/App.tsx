@@ -195,9 +195,13 @@ export function App() {
   }
 
   const addKeyLink = (
-    <Button className="px-0" variant="ghost" onPress={resetToLanding}>
-      Add a TypeSafe key
-    </Button>
+    <button
+      className="text-accent cursor-pointer border-0 bg-transparent p-0 font-medium underline-offset-2 hover:underline"
+      type="button"
+      onClick={resetToLanding}
+    >
+      Add key
+    </button>
   );
 
   const searchForm = (compact = false) => (
@@ -347,14 +351,12 @@ export function App() {
           </Alert>
         ) : null}
         {sampleMode ? (
-          <p className="text-muted mt-2 mb-0 text-sm">
-            Sample results — fixed examples for filters.
-            {!hasKey ? <> {addKeyLink} to search live.</> : null}
+          <p className="text-muted mt-2 mb-0 truncate text-sm">
+            Sample results
+            {!hasKey ? <> · {addKeyLink}</> : null}
           </p>
         ) : !hasKey ? (
-          <p className="text-muted mt-2 mb-0 text-sm">
-            {addKeyLink} to run a live search.
-          </p>
+          <p className="text-muted mt-2 mb-0 truncate text-sm">{addKeyLink}</p>
         ) : null}
       </div>
 
