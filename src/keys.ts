@@ -6,6 +6,7 @@ import { assertLooksLikeKey, normalizeTypeSafeKey } from "./key-format.js";
 export {
   assertLooksLikeKey,
   normalizeTypeSafeKey,
+  requestTypeSafeKey,
   TYPESAFE_KEY_HEADER,
 } from "./key-format.js";
 

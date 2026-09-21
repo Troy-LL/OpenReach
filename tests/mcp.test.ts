@@ -9,7 +9,12 @@ import {
   compactPaper,
 } from "../src/agent.js";
 import { DEMO_RESULT } from "../src/demo-data.js";
-import { createOpenReachMcpServer } from "../src/mcp.js";
+import { MCP_LIVE_KEY_ERROR, createOpenReachMcpServer } from "../src/mcp.js";
+import {
+  createMemoryKeyStore,
+  runWithKeyStore,
+} from "../src/keys.js";
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { Paper } from "../src/types.js";
 
 const EXPECTED_TOOLS = [
@@ -100,5 +105,36 @@ describe("OpenReach MCP", () => {
     };
     expect(compact.papers[0]).not.toHaveProperty("abstract");
     expect(compact.question).toContain("residual");
+  });
+
+  it("search_papers and score_papers refuse live work without a key", async () => {
+    const server = createOpenReachMcpServer({
+      search: async () => DEMO_RESULT,
+      score: async (sessionId, ids) => ({
+        sessionId,
+        pending: 0,
+        papers: DEMO_RESULT.papers.filter((p) => ids.includes(p.id)),
+      }),
+    });
+    const tools = server as unknown as {
+      _registeredTools: Record<
+        string,
+        { handler: (args: unknown) => Promise<CallToolResult> }
+      >;
+    };
+    await runWithKeyStore(createMemoryKeyStore(), async () => {
+      const search = await tools._registeredTools.search_papers.handler({
+        question: "skip connections",
+      });
+      expect(search.isError).toBe(true);
+      expect(search.content[0]).toMatchObject({ text: MCP_LIVE_KEY_ERROR });
+
+      const score = await tools._registeredTools.score_papers.handler({
+        session_id: "s1",
+        ids: [DEMO_RESULT.papers[0].id],
+      });
+      expect(score.isError).toBe(true);
+      expect(score.content[0]).toMatchObject({ text: MCP_LIVE_KEY_ERROR });
+    });
   });
 });
