@@ -59,6 +59,11 @@ describe("phone and desktop chrome", () => {
     expect(paperCard).not.toMatch(/href=\{paper\.url\}/);
   });
 
+  it("marks unlinked papers with a quiet No link note", () => {
+    expect(paperCard).toContain("No link");
+    expect(paperCard).toMatch(/!href|!paper\.url/);
+  });
+
   it("does not call a global cache wipe on pagehide or new search", () => {
     expect(app).not.toContain("clearServerCache");
     expect(app).not.toContain("pagehide");

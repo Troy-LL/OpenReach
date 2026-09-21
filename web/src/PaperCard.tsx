@@ -93,6 +93,7 @@ export function PaperCard({
         <p className="figure mb-2">
           {SOURCE_LABEL[paper.source]}
           {paper.year != null ? ` · ${paper.year}` : ""}
+          {!href ? " · No link" : ""}
         </p>
         <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold md:mb-2 md:text-[1.15rem] md:text-balance">
           {heading}

@@ -59,4 +59,11 @@ describe("Connect MCP after KeyGate", () => {
     expect(keyGate).not.toContain("ConnectMcp");
     expect(keyGate).not.toContain("Copy config");
   });
+
+  it("does not render Connect MCP on sample or results", () => {
+    expect(app.match(/<ConnectMcp/g)?.length).toBe(1);
+    expect(app).toMatch(/Load sample results[\s\S]*<ConnectMcp/);
+    const resultsChunk = app.slice(app.indexOf("plate={busy"));
+    expect(resultsChunk).not.toContain("ConnectMcp");
+  });
 });
