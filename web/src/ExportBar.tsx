@@ -51,31 +51,33 @@ export function ExportBar({
   return (
     <div
       aria-label="Export selected papers"
-      className="mb-2 flex flex-wrap items-center gap-2"
+      className="mb-1 flex min-w-0 flex-wrap items-center gap-2"
       role="toolbar"
     >
-      <span className="font-mono text-sm tabular-nums">
+      <span className="font-mono min-w-0 text-sm tabular-nums">
         {judged}/{total}
-        {pending > 0 ? (
-          <span className="max-sm:hidden">{` · ${pending} waiting`}</span>
-        ) : null}
+        {pending > 0 ? ` · ${pending} waiting` : null}
         {` · p${page}/${totalPages}`}
       </span>
       {papers.length > 0 ? (
-        <span className="text-muted text-sm tabular-nums">{papers.length} selected</span>
-      ) : null}
+        <span className="text-muted min-w-0 text-sm tabular-nums">{papers.length} selected</span>
+      ) : (
+        <span className="text-muted min-w-0 text-sm">Select to export</span>
+      )}
+      <span className="inline-flex min-w-0 flex-wrap gap-2">
       <Tooltip isDisabled={papers.length > 0}>
         <Tooltip.Trigger>
           <span className="inline-flex">
             <Button
               aria-label="Export selected papers as APA"
-              className="pressable"
+              className="pressable min-h-11"
               isDisabled={disabled}
               size="sm"
               variant="secondary"
               onPress={() => void onExport("apa")}
             >
-              Export APA
+              <span className="sm:hidden">APA</span>
+              <span className="max-sm:hidden">Export APA</span>
             </Button>
           </span>
         </Tooltip.Trigger>
@@ -86,18 +88,20 @@ export function ExportBar({
           <span className="inline-flex">
             <Button
               aria-label="Export selected papers as BibTeX"
-              className="pressable"
+              className="pressable min-h-11"
               isDisabled={disabled}
               size="sm"
               variant="secondary"
               onPress={() => void onExport("bibtex")}
             >
-              Export .bib
+              <span className="sm:hidden">.bib</span>
+              <span className="max-sm:hidden">Export .bib</span>
             </Button>
           </span>
         </Tooltip.Trigger>
         <Tooltip.Content>Select papers to export</Tooltip.Content>
       </Tooltip>
+      </span>
     </div>
   );
 }

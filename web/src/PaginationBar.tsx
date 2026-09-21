@@ -25,15 +25,15 @@ export function PaginationBar({
   return (
     <nav
       aria-label="Results pages"
-      className="border-border mt-8 flex flex-wrap items-center justify-between gap-3 border-t pt-5"
+      className="border-border mt-6 flex min-w-0 flex-wrap items-center justify-between gap-2 border-t pt-4 md:mt-8 md:gap-3 md:pt-5"
     >
       <p className="text-muted m-0 text-sm tabular-nums">
         {from}–{to} of {totalItems}
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex min-w-0 flex-wrap items-center gap-2">
         <Button
           aria-label="Previous page"
-          className="pressable"
+          className="pressable min-h-11"
           isDisabled={!canPrev}
           size="sm"
           variant="secondary"
@@ -41,12 +41,12 @@ export function PaginationBar({
         >
           Previous
         </Button>
-        <p className="text-muted m-0 min-w-16 text-center text-sm tabular-nums">
+        <p className="text-muted m-0 min-w-0 text-center text-sm tabular-nums">
           {page} / {totalPages}
         </p>
         <Button
           aria-label="Next page"
-          className="pressable"
+          className="pressable min-h-11"
           isDisabled={!canNext}
           size="sm"
           variant="secondary"

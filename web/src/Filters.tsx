@@ -242,8 +242,9 @@ export function Filters({ filters, onChange, shown, total }: Props) {
 
       <Fieldset>
         <Fieldset.Legend>Year</Fieldset.Legend>
-        <Fieldset.Group className="grid grid-cols-2 gap-2">
+        <Fieldset.Group className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <TextField
+            className="min-w-0"
             value={filters.yearFrom?.toString() ?? ""}
             onChange={(value) =>
               patch({ yearFrom: value ? Number(value) : null })
@@ -253,6 +254,7 @@ export function Filters({ filters, onChange, shown, total }: Props) {
             <Input inputMode="numeric" placeholder="2015" type="number" />
           </TextField>
           <TextField
+            className="min-w-0"
             value={filters.yearTo?.toString() ?? ""}
             onChange={(value) =>
               patch({ yearTo: value ? Number(value) : null })
@@ -335,7 +337,7 @@ export function Filters({ filters, onChange, shown, total }: Props) {
       </Checkbox>
 
       <Button
-        className="pressable"
+        className="pressable min-h-11"
         size="sm"
         type="button"
         variant="secondary"

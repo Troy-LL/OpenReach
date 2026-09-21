@@ -64,27 +64,35 @@ export function PaperCard({
   );
 
   return (
-    <article className="plate group relative flex gap-3 p-3 transition-colors hover:border-[color-mix(in_oklch,var(--accent)_28%,var(--border))] md:gap-4 md:p-5">
-      <input
-        aria-label={`Select ${paper.title}`}
-        checked={selected}
-        className="accent-[var(--accent)] absolute top-3 right-3 h-5 w-5 shrink-0"
-        disabled={selectionDisabled}
-        type="checkbox"
-        onChange={(event) => onSelectedChange(event.currentTarget.checked)}
-      />
+    <article
+      className={`plate group relative flex min-w-0 gap-2 overflow-x-clip p-3 transition-colors hover:border-[color-mix(in_oklch,var(--accent)_28%,var(--border))] md:gap-4 md:p-5 ${
+        selected
+          ? "border-[color-mix(in_oklch,var(--accent)_45%,var(--border))]"
+          : ""
+      }`}
+    >
+      <label className="paper-select">
+        <input
+          aria-label={`Select ${paper.title}`}
+          checked={selected}
+          disabled={selectionDisabled}
+          type="checkbox"
+          onChange={(event) => onSelectedChange(event.currentTarget.checked)}
+        />
+        <span aria-hidden className="paper-select-box" />
+      </label>
       <span
         aria-hidden
-        className="bg-surface-secondary text-accent mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums md:h-8 md:w-8"
+        className="bg-surface-secondary text-accent mt-2 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums md:mt-1.5 md:h-8 md:w-8"
       >
         {figure}
       </span>
-      <div className="min-w-0 flex-1 pr-7">
+      <div className="min-w-0 flex-1">
         <p className="figure mb-2">
           {SOURCE_LABEL[paper.source]}
           {paper.year != null ? ` · ${paper.year}` : ""}
         </p>
-        <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold text-balance md:mb-2 md:text-[1.15rem]">
+        <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold md:mb-2 md:text-[1.15rem] md:text-balance">
           {heading}
         </h2>
         {paper.authors && paper.authors.length > 0 ? (
@@ -94,7 +102,7 @@ export function PaperCard({
               : paper.authors.join(", ")}
           </p>
         ) : null}
-        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 md:mb-3">
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 max-sm:hidden md:mb-3">
           {paper.venue ? (
             <Chip className="max-w-full" size="sm" variant="soft">
               <Chip.Label className="truncate">{paper.venue}</Chip.Label>
@@ -109,15 +117,15 @@ export function PaperCard({
         <p
           className={
             abstractOpen
-              ? "text-muted mt-0 mb-2 max-w-[68ch] text-pretty leading-relaxed md:mb-4"
-              : "text-muted mt-0 mb-2 max-w-[68ch] text-pretty leading-relaxed max-md:line-clamp-3 md:mb-4"
+              ? "text-muted mt-0 mb-1 max-w-[68ch] text-pretty leading-relaxed md:mb-4"
+              : "text-muted mt-0 mb-1 max-w-[68ch] text-pretty leading-relaxed max-md:line-clamp-2 md:mb-4"
           }
         >
           {paper.abstract}
         </p>
         {canExpand ? (
           <button
-            className="text-accent mb-3 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium md:hidden"
+            className="show-more text-accent mb-2 inline-flex cursor-pointer border-0 bg-transparent p-0 text-sm font-medium md:hidden"
             type="button"
             onClick={() => setAbstractOpen((open) => !open)}
           >
@@ -128,24 +136,24 @@ export function PaperCard({
           <details className="score-block">
             <summary
               aria-label="Jev scores"
-              className="flex cursor-pointer flex-wrap items-center gap-1.5 max-md:flex-nowrap max-md:overflow-hidden"
+              className="flex min-w-0 cursor-pointer flex-wrap items-center gap-1.5"
             >
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Rel {pct(paper.relevance)}</Chip.Label>
               </Chip>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Method {paper.method.toFixed(0)}</Chip.Label>
               </Chip>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Pop {paper.population.toFixed(0)}</Chip.Label>
               </Chip>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Evid {paper.evidence.toFixed(0)}</Chip.Label>
               </Chip>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Rec {paper.recency.toFixed(0)}</Chip.Label>
               </Chip>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Review {pct(paper.isReview)}</Chip.Label>
               </Chip>
               <span className="text-muted text-xs">Details</span>

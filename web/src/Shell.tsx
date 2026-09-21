@@ -32,7 +32,7 @@ export function Shell({ children, plate, trailing, centered = false }: Props) {
         className={
           centered
             ? `mx-auto flex w-full max-w-[40rem] flex-col ${padX} pt-[min(12vh,6rem)] pb-[max(6rem,env(safe-area-inset-bottom))] sm:pt-[min(18vh,8rem)]`
-            : `mx-auto w-full max-w-[72rem] ${padX} py-4 pb-[max(6rem,env(safe-area-inset-bottom))] sm:pt-8`
+            : `mx-auto min-w-0 w-full max-w-[72rem] ${padX} py-3 pb-[max(6rem,env(safe-area-inset-bottom))] sm:py-4 sm:pt-8`
         }
       >
         {children}

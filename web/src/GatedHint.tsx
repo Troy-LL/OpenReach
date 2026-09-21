@@ -21,10 +21,14 @@ export function KeyLockedChip({ hint }: { hint: string }) {
   return (
     <Tooltip>
       <Tooltip.Trigger>
-        <span aria-label="Needs TypeSafe key" className="inline-flex shrink-0">
+        <span
+          aria-label="Needs TypeSafe key"
+          className="inline-flex min-h-11 min-w-11 shrink-0 items-center justify-center"
+        >
           <Chip size="sm" variant="soft">
-            <Chip.Label className="inline-flex items-center">
+            <Chip.Label className="inline-flex items-center gap-1">
               <LockIcon />
+              <span>Needs key</span>
               <span className="sr-only">Needs TypeSafe key</span>
             </Chip.Label>
           </Chip>
