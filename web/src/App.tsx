@@ -336,8 +336,8 @@ export function App() {
         </Button>
       }
     >
-      <div className="mb-4">
-        <h1 className="mt-0 mb-2 max-md:line-clamp-2 text-lg md:text-[clamp(1.35rem,2.5vw,1.75rem)] leading-snug font-semibold text-balance">
+      <div className="mb-3">
+        <h1 className="mt-0 mb-1 overflow-hidden max-md:line-clamp-2 text-lg leading-snug font-semibold md:text-[clamp(1.35rem,2.5vw,1.75rem)] md:text-balance">
           {heading}
         </h1>
         <div className="search-shell p-2 sm:p-4">{searchForm(true)}</div>
@@ -419,7 +419,7 @@ export function App() {
                       selectionDisabled={busy}
                       onSelectedChange={(checked) => toggleSelected(paper.id, checked)}
                     />
-                    <div className="mt-1 flex min-h-11 items-center justify-end">
+                    <div className="mt-1 flex items-center justify-end md:min-h-11">
                       {hasKey ? (
                         <Button
                           aria-label={`Find papers more like ${paper.title}`}

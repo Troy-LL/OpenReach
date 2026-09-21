@@ -58,9 +58,13 @@ describe("phone and desktop chrome", () => {
     expect(exportBar).not.toContain("Needs TypeSafe key");
   });
 
-  it("clips horizontal overflow and honors iOS safe-area", () => {
+  it("clips horizontal overflow only after plates can shrink to the viewport", () => {
     expect(styles).toContain("overflow-x: clip");
+    expect(styles).toMatch(/\.plate[\s\S]*min-width:\s*0/);
+    expect(styles).toMatch(/\.plate[\s\S]*max-width:\s*100%/);
     expect(indexHtml).toContain("viewport-fit=cover");
+    expect(paperCard).toMatch(/min-w-0/);
+    expect(app).toMatch(/grid min-w-0/);
   });
 
   it("collapses filters below md behind a details summary with a chevron", () => {
@@ -83,8 +87,8 @@ describe("phone and desktop chrome", () => {
 
   it("tightens results search chrome under 640px without restacking Search full-width", () => {
     expect(app).toMatch(/search-shell p-2/);
-    expect(app).toMatch(/text-lg md:text-\[clamp/);
-    expect(app).toMatch(/className="mb-4"/);
+    expect(app).toMatch(/text-lg[^]*md:text-\[clamp/);
+    expect(app).toMatch(/className="mb-3"/);
     expect(app).toMatch(/flex flex-row items-stretch gap-2/);
     expect(app).toMatch(/size=\{compact \? "sm" : undefined\}/);
     expect(app).toMatch(/min-h-11 shrink-0/);
@@ -97,7 +101,7 @@ describe("phone and desktop chrome", () => {
   });
 
   it("clamps mobile abstracts and seats a visible 44px select beside the figure", () => {
-    expect(paperCard).toContain("line-clamp-3");
+    expect(paperCard).toContain("line-clamp-2");
     expect(paperCard).toMatch(/text-base/);
     expect(paperCard).toMatch(/p-3/);
     expect(paperCard).toMatch(/h-7 w-7/);
@@ -126,28 +130,31 @@ describe("phone and desktop chrome", () => {
   });
 
   it("gives phone controls a 44px tap and keeps pending tally visible", () => {
-    expect(paperCard).toMatch(/Show more[\s\S]*min-h-11|min-h-11[\s\S]*Show more/);
+    expect(paperCard).toContain("show-more");
+    expect(styles).toContain(".show-more::before");
     expect(exportBar).toMatch(/min-h-11/);
     expect(pagination).toMatch(/min-h-11/);
     expect(app).toMatch(/More like this[\s\S]*min-h-11|min-h-11[\s\S]*More like this/);
     expect(gatedHint).toMatch(/min-h-11/);
-    expect(exportBar).toContain("waiting");
-    expect(exportBar).not.toMatch(/max-sm:hidden/);
+    expect(exportBar).toContain("{pending} waiting");
   });
 
   it("keeps filter year fields usable on phone without iOS input zoom", () => {
     expect(filters).toContain('inputMode="numeric"');
     expect(filters).toContain("Year");
+    expect(filters).toMatch(/grid-cols-1/);
+    expect(filters).toMatch(/minmax\(0,1fr\)/);
     expect(styles).toMatch(/max-width:\s*767px/);
     expect(styles).toMatch(/font-size:\s*1rem/);
     expect(styles).toMatch(/min-height:\s*2\.75rem/);
   });
 
-  it("compacts the export toolbar to a mono tally and drops the empty-state label", () => {
+  it("shows an inline select-to-export helper and keeps export selection-gated", () => {
     expect(exportBar).toMatch(/font-mono/);
     expect(exportBar).toMatch(/p\$\{/);
-    expect(exportBar).not.toMatch(/\?\s*"Select papers to export"/);
+    expect(exportBar).toContain("Select to export");
     expect(exportBar).toContain("Select papers to export");
+    expect(exportBar).not.toContain("Needs TypeSafe key");
     expect(exportBar).toMatch(/size="sm"/);
   });
 

@@ -242,7 +242,7 @@ export function Filters({ filters, onChange, shown, total }: Props) {
 
       <Fieldset>
         <Fieldset.Legend>Year</Fieldset.Legend>
-        <Fieldset.Group className="grid min-w-0 grid-cols-2 gap-2">
+        <Fieldset.Group className="grid min-w-0 grid-cols-1 gap-2 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
           <TextField
             className="min-w-0"
             value={filters.yearFrom?.toString() ?? ""}

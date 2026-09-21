@@ -92,7 +92,7 @@ export function PaperCard({
           {SOURCE_LABEL[paper.source]}
           {paper.year != null ? ` · ${paper.year}` : ""}
         </p>
-        <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold text-balance md:mb-2 md:text-[1.15rem]">
+        <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold md:mb-2 md:text-[1.15rem] md:text-balance">
           {heading}
         </h2>
         {paper.authors && paper.authors.length > 0 ? (
@@ -102,7 +102,7 @@ export function PaperCard({
               : paper.authors.join(", ")}
           </p>
         ) : null}
-        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 md:mb-3">
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 max-sm:hidden md:mb-3">
           {paper.venue ? (
             <Chip className="max-w-full" size="sm" variant="soft">
               <Chip.Label className="truncate">{paper.venue}</Chip.Label>
@@ -117,15 +117,15 @@ export function PaperCard({
         <p
           className={
             abstractOpen
-              ? "text-muted mt-0 mb-2 max-w-[68ch] text-pretty leading-relaxed md:mb-4"
-              : "text-muted mt-0 mb-2 max-w-[68ch] text-pretty leading-relaxed max-md:line-clamp-3 md:mb-4"
+              ? "text-muted mt-0 mb-1 max-w-[68ch] text-pretty leading-relaxed md:mb-4"
+              : "text-muted mt-0 mb-1 max-w-[68ch] text-pretty leading-relaxed max-md:line-clamp-2 md:mb-4"
           }
         >
           {paper.abstract}
         </p>
         {canExpand ? (
           <button
-            className="text-accent -ml-2 mb-2 inline-flex min-h-11 cursor-pointer items-center border-0 bg-transparent px-2 text-sm font-medium md:hidden"
+            className="show-more text-accent mb-2 inline-flex cursor-pointer border-0 bg-transparent p-0 text-sm font-medium md:hidden"
             type="button"
             onClick={() => setAbstractOpen((open) => !open)}
           >

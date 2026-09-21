@@ -90,9 +90,13 @@ body {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: 0 1px 2px oklch(0.3 0.02 250 / 0.04);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .search-shell {
+  min-width: 0;
+  max-width: 100%;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 1.25rem;
@@ -239,6 +243,18 @@ body {
 
 .paper-select input:disabled {
   cursor: default;
+}
+
+.show-more {
+  position: relative;
+  align-items: center;
+  min-height: 1.25rem;
+}
+
+.show-more::before {
+  position: absolute;
+  inset: -0.75rem -0.5rem;
+  content: "";
 }
 
 .score-block > summary {

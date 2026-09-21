@@ -25,7 +25,7 @@ export function ResultList({
   }, [startIndex]);
 
   return (
-    <ol className="m-0 flex list-none flex-col gap-3 p-0" start={startIndex + 1}>
+    <ol className="m-0 flex list-none flex-col gap-2 p-0 md:gap-3" start={startIndex + 1}>
       {items.map((paper, index) => (
         <li key={paper.id}>{renderItem(paper, startIndex + index)}</li>
       ))}
