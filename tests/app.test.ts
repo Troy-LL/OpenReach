@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
 import { DEMO_RESULT } from "../src/demo-data.js";
+import { MCP_MAX_BODY_BYTES } from "../src/mcp-http.js";
 import type { SearchResult } from "../src/types.js";
 
 describe("HTTP API", () => {
@@ -282,6 +283,66 @@ describe("HTTP API", () => {
       }),
     });
     expect(res.status).toBe(503);
+  });
+
+  it("does not expose an unauthenticated cache wipe", async () => {
+    const app = createApp();
+    const res = await app.request("/api/cache/clear", { method: "POST" });
+    expect(res.status).toBe(404);
+  });
+
+  it("rejects an oversized API body before running the handler", async () => {
+    let ran = false;
+    const app = createApp({
+      search: async (question) => {
+        ran = true;
+        return { ...DEMO_RESULT, question };
+      },
+    });
+    const res = await app.request("/api/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Content-Length": String(MCP_MAX_BODY_BYTES + 1),
+      },
+      body: JSON.stringify({ question: "skip connections" }),
+    });
+    expect(res.status).toBe(413);
+    expect(ran).toBe(false);
+  });
+
+  it("rate-limits /api after 60 hits from one connecting IP", async () => {
+    const app = createApp();
+    const headers = { "cf-connecting-ip": "203.0.113.10" };
+    for (let i = 0; i < 60; i++) {
+      const res = await app.request("/api/health", { headers });
+      expect(res.status).toBe(200);
+    }
+    const blocked = await app.request("/api/health", { headers });
+    expect(blocked.status).toBe(429);
+    const other = await app.request("/api/health", {
+      headers: { "cf-connecting-ip": "203.0.113.11" },
+    });
+    expect(other.status).toBe(200);
+  });
+
+  it("does not echo upstream URLs or key-like tokens on search failure", async () => {
+    const app = createApp({
+      search: async () => {
+        throw new Error(
+          "HTTP 403 for https://api.semanticscholar.org/graph/v1/paper/search?x-api-key=sk_live_supersecret123456: unauthorized",
+        );
+      },
+    });
+    const res = await app.request("/api/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question: "skip connections" }),
+    });
+    expect(res.status).toBe(500);
+    const body = (await res.json()) as { error: string };
+    expect(body.error).toBe("Search failed.");
+    expect(JSON.stringify(body)).not.toMatch(/semanticscholar|sk_live|x-api-key/i);
   });
 
   it("runs injected more-like search", async () => {

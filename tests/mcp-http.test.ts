@@ -3,7 +3,11 @@ import { createApp } from "../src/app.js";
 import { DEMO_RESULT } from "../src/demo-data.js";
 import { TYPESAFE_KEY_HEADER } from "../src/key-format.js";
 import { MCP_LIVE_KEY_ERROR } from "../src/mcp.js";
-import { createMcpRateLimiter, MCP_MAX_BODY_BYTES } from "../src/mcp-http.js";
+import {
+  createMcpRateLimiter,
+  MCP_MAX_BODY_BYTES,
+  requestRateLimitKey,
+} from "../src/mcp-http.js";
 import {
   createMemoryKeyStore,
   runWithKeyStore,
@@ -239,5 +243,20 @@ describe("MCP rate limiter", () => {
     expect(allow("1.1.1.1", now + 10)).toBe(true);
     expect(allow("1.1.1.1", now + 20)).toBe(false);
     expect(allow("2.2.2.2", now + 20)).toBe(true);
+  });
+
+  it("does not trust X-Forwarded-For for the client key", () => {
+    const spoofed = new Request("https://openreach.niched.tech/mcp", {
+      headers: { "x-forwarded-for": "198.51.100.1, 10.0.0.1" },
+    });
+    expect(requestRateLimitKey(spoofed)).toBe("local");
+
+    const fromCf = new Request("https://openreach.niched.tech/mcp", {
+      headers: {
+        "cf-connecting-ip": "2001:db8::1",
+        "x-forwarded-for": "198.51.100.1",
+      },
+    });
+    expect(requestRateLimitKey(fromCf)).toBe("2001:db8::1");
   });
 });

@@ -5,7 +5,6 @@ import type { RankedPaper, SearchResult } from "@shared/types";
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   clearApiKey,
-  clearServerCache,
   getHealth,
   loadDemo,
   moreLikePaper,
@@ -116,7 +115,6 @@ export function App() {
     setPage(1);
     setSelectedIds(new Set());
     inFlight.current.clear();
-    void clearServerCache();
   }, []);
 
   const toggleSelected = useCallback((id: string, checked: boolean) => {
@@ -140,14 +138,6 @@ export function App() {
     if (busy || !hasKey) return;
     void run(() => moreLikePaper(paper));
   }
-
-  useEffect(() => {
-    const onHide = () => {
-      void clearServerCache();
-    };
-    window.addEventListener("pagehide", onHide);
-    return () => window.removeEventListener("pagehide", onHide);
-  }, []);
 
   const onVisibleIds = useCallback((ids: string[]) => {
     const current = resultRef.current;

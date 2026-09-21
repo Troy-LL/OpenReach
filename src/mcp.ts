@@ -13,6 +13,7 @@ import {
   type AgentDeps,
 } from "./agent.js";
 import { hasApiKey, loadLocalKey } from "./keys.js";
+import { publicErrorMessage } from "./public-error.js";
 import type { Paper, PaperSource } from "./types.js";
 
 export const MCP_LIVE_KEY_ERROR =
@@ -24,6 +25,22 @@ function liveKeyOrError(): CallToolResult | null {
     isError: true,
     content: [{ type: "text", text: MCP_LIVE_KEY_ERROR }],
   };
+}
+
+async function runLiveTool(
+  work: () => Promise<CallToolResult>,
+  fallback: string,
+): Promise<CallToolResult> {
+  const denied = liveKeyOrError();
+  if (denied) return denied;
+  try {
+    return await work();
+  } catch (err) {
+    return {
+      isError: true,
+      content: [{ type: "text", text: publicErrorMessage(err, fallback) }],
+    };
+  }
 }
 
 const PAPER_SOURCES = [
@@ -88,16 +105,15 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
         score_first: z.number().int().min(0).max(12).optional(),
       },
     },
-    async (args) => {
-      const denied = liveKeyOrError();
-      if (denied) return denied;
-      const result = await agentSearch(
-        args.question,
-        args.score_first ?? 0,
-        deps,
-      );
-      return jsonToolResult(result);
-    },
+    async (args) =>
+      runLiveTool(async () => {
+        const result = await agentSearch(
+          args.question,
+          args.score_first ?? 0,
+          deps,
+        );
+        return jsonToolResult(result);
+      }, "Search failed."),
   );
 
   server.registerTool(
@@ -109,12 +125,11 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
         ids: z.array(z.string()).min(1),
       },
     },
-    async (args) => {
-      const denied = liveKeyOrError();
-      if (denied) return denied;
-      const result = await agentScore(args.session_id, args.ids, deps);
-      return jsonToolResult(result);
-    },
+    async (args) =>
+      runLiveTool(async () => {
+        const result = await agentScore(args.session_id, args.ids, deps);
+        return jsonToolResult(result);
+      }, "Score failed."),
   );
 
   server.registerTool(
@@ -133,12 +148,11 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
         authors: z.array(z.string()).optional(),
       },
     },
-    async (args) => {
-      const denied = liveKeyOrError();
-      if (denied) return denied;
-      const result = await agentMoreLike(paperFromToolInput(args), deps);
-      return jsonToolResult(result);
-    },
+    async (args) =>
+      runLiveTool(async () => {
+        const result = await agentMoreLike(paperFromToolInput(args), deps);
+        return jsonToolResult(result);
+      }, "More-like failed."),
   );
 
   server.registerTool(

@@ -54,6 +54,16 @@ describe("phone and desktop chrome", () => {
     expect(paperCard).toMatch(/font-serif/);
   });
 
+  it("does not put raw paper.url into href", () => {
+    expect(paperCard).toContain("safeHttpUrl");
+    expect(paperCard).not.toMatch(/href=\{paper\.url\}/);
+  });
+
+  it("does not call a global cache wipe on pagehide or new search", () => {
+    expect(app).not.toContain("clearServerCache");
+    expect(app).not.toContain("pagehide");
+  });
+
   it("keeps export selection-gated, not TypeSafe-key-gated", () => {
     expect(exportBar).toContain("Select papers to export");
     expect(exportBar).not.toContain("Needs TypeSafe key");
