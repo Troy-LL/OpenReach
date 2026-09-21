@@ -51,6 +51,16 @@ describe("Connect MCP after KeyGate", () => {
     expect(connectMcp).toContain("remoteMcpUrl");
     expect(connectMcp).toMatch(/needs your TypeSafe key from this browser/i);
     expect(connectMcp).toMatch(/don.t store it on the server/i);
+    expect(connectMcp).toMatch(
+      /Paste into Cursor → Settings → MCP \/ mcp\.json/,
+    );
+  });
+
+  it("shows an error when the clipboard write does not stick", () => {
+    expect(connectMcp).toMatch(/navigator\.clipboard\.writeText/);
+    expect(connectMcp).toMatch(/catch/);
+    expect(connectMcp).toMatch(/role="alert"|status="danger"/);
+    expect(connectMcp).toMatch(/Couldn.t copy|Could not copy|clipboard/i);
   });
 
   it("renders the card on the keyed landing, not on KeyGate", () => {

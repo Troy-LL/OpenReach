@@ -1,9 +1,10 @@
-import { Button } from "@heroui/react";
+import { Alert, Button } from "@heroui/react";
 import { cursorMcpSnippet, remoteMcpUrl } from "@shared/mcp-connect";
 import { useState } from "react";
 
 export function ConnectMcp({ apiKey }: { apiKey: string }) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const url = remoteMcpUrl();
   const snippet = cursorMcpSnippet(apiKey, url);
 
@@ -12,8 +13,12 @@ export function ConnectMcp({ apiKey }: { apiKey: string }) {
     try {
       await navigator.clipboard.writeText(snippet);
       setCopied(true);
+      setCopyError(null);
     } catch {
       setCopied(false);
+      setCopyError(
+        "Couldn't copy. Select the snippet and paste it into Cursor → Settings → MCP / mcp.json yourself.",
+      );
     }
   }
 
@@ -31,7 +36,17 @@ export function ConnectMcp({ apiKey }: { apiKey: string }) {
       >
         {copied ? "Copied" : "Copy config"}
       </Button>
+      {copyError ? (
+        <Alert className="mt-3" role="alert" status="danger">
+          <Alert.Indicator />
+          <Alert.Content>
+            <Alert.Title>Couldn't copy</Alert.Title>
+            <Alert.Description>{copyError}</Alert.Description>
+          </Alert.Content>
+        </Alert>
+      ) : null}
       <p className="text-muted mt-3 mb-0 text-sm text-pretty">
+        Paste into Cursor → Settings → MCP / mcp.json.
         Needs your TypeSafe key from this browser; we don’t store it on the server.
       </p>
     </section>
