@@ -1,4 +1,5 @@
 import { Chip } from "@heroui/react";
+import { safeHttpUrl } from "@shared/safe-url";
 import type { PaperSource, RankedPaper } from "@shared/types";
 import {
   EVIDENCE_LEGENDS,
@@ -50,10 +51,11 @@ export function PaperCard({
   const [abstractOpen, setAbstractOpen] = useState(false);
   const canExpand = paper.abstract.trim().length > ABSTRACT_CLAMP_CHARS;
 
-  const heading = paper.url ? (
+  const href = safeHttpUrl(paper.url);
+  const heading = href ? (
     <a
       className="text-foreground decoration-accent/40 underline-offset-3 hover:text-accent hover:underline"
-      href={paper.url}
+      href={href}
       rel="noreferrer"
       target="_blank"
     >
@@ -91,6 +93,7 @@ export function PaperCard({
         <p className="figure mb-2">
           {SOURCE_LABEL[paper.source]}
           {paper.year != null ? ` · ${paper.year}` : ""}
+          {!href ? " · No link" : ""}
         </p>
         <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold md:mb-2 md:text-[1.15rem] md:text-balance">
           {heading}

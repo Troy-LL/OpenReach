@@ -80,10 +80,6 @@ export async function scoreVisible(
   return readJson(res);
 }
 
-export async function clearServerCache(): Promise<void> {
-  await fetch("/api/cache/clear", { method: "POST", headers: apiHeaders() });
-}
-
 export async function exportCitations(
   format: ExportFormat,
   papers: CiteablePaper[],

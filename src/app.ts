@@ -13,16 +13,21 @@ import {
   runWithKeyStore,
   saveLocalKey,
 } from "./keys.js";
-import { handleMcpHttp } from "./mcp-http.js";
-import { clearScoreCache, scoreCacheSize } from "./rerank.js";
 import {
-  clearRetrieveCache,
+  createMcpRateLimiter,
+  handleMcpHttp,
+  MCP_MAX_BODY_BYTES,
+  requestRateLimitKey,
+} from "./mcp-http.js";
+import { publicErrorMessage } from "./public-error.js";
+import { scoreCacheSize } from "./rerank.js";
+import {
   findMoreLikeThis,
   findPapers,
   retrieveCacheSize,
   scoreVisiblePapers,
 } from "./search.js";
-import { clearSessions, sessionCacheSize } from "./session.js";
+import { sessionCacheSize } from "./session.js";
 import { suggestQueries, type Suggestion } from "./suggest.js";
 import type { Paper, PaperSource, RankedPaper, SearchResult } from "./types.js";
 
@@ -40,7 +45,6 @@ export interface AppDeps {
   ) => Promise<ScoreVisibleResult>;
   moreLike?: (paper: Paper) => Promise<SearchResult>;
   suggest?: (query: string) => Promise<Suggestion[]>;
-  clearCaches?: () => void | Promise<void>;
 }
 
 const PAPER_SOURCES = new Set<PaperSource>([
@@ -122,12 +126,6 @@ function parseMoreLikePaper(value: unknown): Paper | null {
   };
 }
 
-export async function clearAllCaches(): Promise<void> {
-  clearScoreCache();
-  clearRetrieveCache();
-  await clearSessions();
-}
-
 export function createApp(deps: AppDeps = {}): Hono {
   const search = deps.search ?? ((q: string) => findPapers(q, { scoreFirst: 0 }));
   const scoreVisible = deps.scoreVisible ?? scoreVisiblePapers;
@@ -135,7 +133,7 @@ export function createApp(deps: AppDeps = {}): Hono {
     deps.moreLike ??
     ((paper: Paper) => findMoreLikeThis(paper, { scoreFirst: 0 }));
   const suggest = deps.suggest ?? ((q: string) => suggestQueries(q));
-  const clearCaches = deps.clearCaches ?? clearAllCaches;
+  const allowIp = createMcpRateLimiter({ limit: 60, windowMs: 60_000 });
   const mcpDeps: AgentDeps = {
     search: deps.search
       ? async (question) => deps.search!(question)
@@ -146,6 +144,21 @@ export function createApp(deps: AppDeps = {}): Hono {
       : undefined,
   };
   const app = new Hono();
+
+  const withRequestBudget: MiddlewareHandler = async (c, next) => {
+    if (c.req.method === "OPTIONS") {
+      await next();
+      return;
+    }
+    const declared = Number(c.req.header("content-length") ?? "");
+    if (Number.isFinite(declared) && declared > MCP_MAX_BODY_BYTES) {
+      return c.json({ error: "Request is too large." }, 413);
+    }
+    if (!allowIp(requestRateLimitKey(c.req.raw))) {
+      return c.json({ error: "Too many requests. Try again shortly." }, 429);
+    }
+    await next();
+  };
 
   const withRequestKey: MiddlewareHandler = async (c, next) => {
     const store = overlayRequestKey(
@@ -158,9 +171,10 @@ export function createApp(deps: AppDeps = {}): Hono {
     await runWithKeyStore(store, () => next());
   };
 
+  app.use("/api/*", withRequestBudget);
   app.use("/api/*", withRequestKey);
   app.use("/mcp", withRequestKey);
-  app.all("/mcp", (c) => handleMcpHttp(c.req.raw, mcpDeps));
+  app.all("/mcp", (c) => handleMcpHttp(c.req.raw, mcpDeps, allowIp));
 
   app.get("/api", (c) =>
     c.json({
@@ -254,8 +268,7 @@ export function createApp(deps: AppDeps = {}): Hono {
       const suggestions = await suggest(q);
       return c.json({ suggestions });
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Suggest failed.";
-      return c.json({ error: message }, 500);
+      return c.json({ error: publicErrorMessage(err, "Suggest failed.") }, 500);
     }
   });
   app.post("/api/key", async (c) => {
@@ -301,9 +314,9 @@ export function createApp(deps: AppDeps = {}): Hono {
       const result = await search(question);
       return c.json(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Search failed.";
-      const status = /API_KEY/i.test(message) ? 503 : 500;
-      return c.json({ error: message }, status);
+      const raw = err instanceof Error ? err.message : "";
+      const status = /API_KEY/i.test(raw) ? 503 : 500;
+      return c.json({ error: publicErrorMessage(err, "Search failed.") }, status);
     }
   });
 
@@ -331,13 +344,13 @@ export function createApp(deps: AppDeps = {}): Hono {
     try {
       return c.json(await scoreVisible(sessionId, ids));
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Score failed.";
-      const status = /expired/i.test(message)
+      const raw = err instanceof Error ? err.message : "";
+      const status = /expired/i.test(raw)
         ? 404
-        : /API_KEY/i.test(message)
+        : /API_KEY/i.test(raw)
           ? 503
           : 500;
-      return c.json({ error: message }, status);
+      return c.json({ error: publicErrorMessage(err, "Score failed.") }, status);
     }
   });
 
@@ -384,15 +397,13 @@ export function createApp(deps: AppDeps = {}): Hono {
       const result = await moreLike(paper);
       return c.json(result);
     } catch (err) {
-      const message = err instanceof Error ? err.message : "More-like failed.";
-      const status = /API_KEY/i.test(message) ? 503 : 500;
-      return c.json({ error: message }, status);
+      const raw = err instanceof Error ? err.message : "";
+      const status = /API_KEY/i.test(raw) ? 503 : 500;
+      return c.json(
+        { error: publicErrorMessage(err, "More-like failed.") },
+        status,
+      );
     }
-  });
-
-  app.post("/api/cache/clear", async (c) => {
-    await clearCaches();
-    return c.json({ ok: true });
   });
 
   return app;

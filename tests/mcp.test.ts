@@ -137,4 +137,34 @@ describe("OpenReach MCP", () => {
       expect(score.content[0]).toMatchObject({ text: MCP_LIVE_KEY_ERROR });
     });
   });
+
+  it("does not return upstream URLs from a live tool throw", async () => {
+    const server = createOpenReachMcpServer({
+      search: async () => {
+        throw new Error(
+          "HTTP 403 for https://api.semanticscholar.org/x-api-key=sk_live_supersecret123456",
+        );
+      },
+    });
+    const tools = server as unknown as {
+      _registeredTools: Record<
+        string,
+        { handler: (args: unknown) => Promise<CallToolResult> }
+      >;
+    };
+    const store = createMemoryKeyStore();
+    await store.saveLocalKey("apikey_mcp_error_sanitize_1234567890");
+    const result = await runWithKeyStore(store, () =>
+      tools._registeredTools.search_papers.handler({
+        question: "skip connections",
+      }),
+    );
+    expect(result.isError).toBe(true);
+    const text =
+      result.content[0] && "text" in result.content[0]
+        ? result.content[0].text
+        : "";
+    expect(text).toBe("Search failed.");
+    expect(text).not.toMatch(/semanticscholar|sk_live/i);
+  });
 });

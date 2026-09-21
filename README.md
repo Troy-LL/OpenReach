@@ -74,7 +74,7 @@ OpenReach speaks MCP over remote Streamable HTTP and local stdio. The tools are 
 
 ### Remote (no checkout)
 
-The hosted Worker serves **https://openreach.niched.tech/mcp** (same `/mcp` path on the `*.workers.dev` fallback). After you paste a TypeSafe key in the UI, the **Connect MCP** card copies a ready Cursor `mcp.json` block that already includes the key from this browser as `X-Typesafe-Key`. We do not store that key on the server.
+The hosted Worker serves **https://openreach.niched.tech/mcp** (same `/mcp` path on the `*.workers.dev` fallback). After you paste a TypeSafe key in the UI, the **Connect MCP** card copies a config block that already includes the key from this browser as `X-Typesafe-Key`. We do not store that key on the server.
 
 ```json
 {
@@ -89,7 +89,7 @@ The hosted Worker serves **https://openreach.niched.tech/mcp** (same `/mcp` path
 }
 ```
 
-Paste that one block into Cursor MCP settings. You can also point the same header at an env value in `mcp.json` if you prefer not to embed the key. Live tools refuse to run without `X-Typesafe-Key` or `Authorization: Bearer`. `demo_papers` and `export_citations` work without a key. Do not set `TYPESAFE_API_KEY` as a Worker secret.
+Paste that block into your MCP-capable agent to connect. You can also point the same header at an env value if you prefer not to embed the key. Live tools refuse to run without `X-Typesafe-Key` or `Authorization: Bearer`. `demo_papers` and `export_citations` work without a key. Do not set `TYPESAFE_API_KEY` as a Worker secret.
 
 ### Local stdio
 
@@ -99,7 +99,7 @@ From a checkout, start the stdio server with:
 npm run mcp
 ```
 
-To register it in Cursor, add the following to `mcp.json` and set `cwd` to your OpenReach checkout:
+To register the local stdio server in an MCP-capable agent, add a config like this and set `cwd` to your OpenReach checkout:
 
 ```json
 "openreach": {

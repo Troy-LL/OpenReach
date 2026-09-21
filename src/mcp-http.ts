@@ -40,12 +40,9 @@ export function createMcpRateLimiter(opts: {
 
 const allowMcpIp = createMcpRateLimiter({ limit: 60, windowMs: 60_000 });
 
-function clientIp(request: Request): string {
-  return (
-    request.headers.get("cf-connecting-ip")?.trim() ||
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    "local"
-  );
+/** Cloudflare's connecting IP only. X-Forwarded-For is caller-controlled. */
+export function requestRateLimitKey(request: Request): string {
+  return request.headers.get("cf-connecting-ip")?.trim() || "local";
 }
 
 function withCors(response: Response): Response {
@@ -76,12 +73,13 @@ function byteLength(text: string): number {
 export async function handleMcpHttp(
   request: Request,
   deps: AgentDeps = {},
+  allowIp: (key: string, now?: number) => boolean = allowMcpIp,
 ): Promise<Response> {
   if (request.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: CORS_HEADERS });
   }
 
-  if (!allowMcpIp(clientIp(request))) {
+  if (!allowIp(requestRateLimitKey(request))) {
     return jsonError(429, "Too many MCP requests. Try again shortly.");
   }
 
