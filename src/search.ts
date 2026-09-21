@@ -69,10 +69,18 @@ async function retrieve(question: string): Promise<Paper[]> {
     keywordLimit: 40,
     arxivLimit: 40,
     europePmcLimit: 40,
+    crossrefLimit: 40,
+    pubmedLimit: 40,
+    inspireLimit: 30,
+    ericLimit: 30,
+    doajLimit: 30,
+    openaireLimit: 30,
+    preprintLimit: 30,
+    plosLimit: 30,
     relatedLimit: 25,
     topicPaperLimit: 12,
   });
-  const papers = dedupePapers(raw, 120);
+  const papers = dedupePapers(raw, 180);
   retrieveCache.set(key, papers);
   return papers;
 }

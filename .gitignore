@@ -3,5 +3,6 @@ dist/
 web/dist/
 .env
 data/
+scratch/
 *.log
 .DS_Store

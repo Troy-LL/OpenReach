@@ -21,8 +21,17 @@ import type { PaperSource } from "@shared/types";
 const SOURCE_LABEL: Record<PaperSource, string> = {
   openalex: "OpenAlex",
   semantic_scholar: "Semantic Scholar",
+  crossref: "Crossref",
+  openaire: "OpenAIRE",
+  doaj: "DOAJ",
   arxiv: "arXiv",
+  inspire: "INSPIRE-HEP",
   europe_pmc: "Europe PMC",
+  pubmed: "PubMed",
+  biorxiv: "bioRxiv",
+  medrxiv: "medRxiv",
+  plos: "PLOS",
+  eric: "ERIC",
   related: "Related / cited",
 };
 

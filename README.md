@@ -1,6 +1,25 @@
 # OpenReach
 
-Reach for scientific papers that weren’t findable before. Ask a research question in plain language; OpenReach retrieves candidates from OpenAlex, Semantic Scholar, arXiv, and Europe PMC, then ranks each title and abstract by meaning (via Jev / TypeSafe). Results are paginated (8 per page); only the current page is scored.
+Reach for scientific papers that weren’t findable before. Ask a research question in plain language; OpenReach retrieves candidates across scholarly indexes, then ranks each title and abstract by meaning (via Jev / TypeSafe). Results are paginated (8 per page); only the current page is scored.
+
+## Indexes
+
+| Source | Role |
+| --- | --- |
+| OpenAlex | Broad scholarly graph + related works |
+| Semantic Scholar | Broad semantic search |
+| Crossref | Publisher DOI / metadata layer |
+| OpenAIRE | EU / open research aggregator |
+| DOAJ | Open-access journal articles |
+| arXiv | CS / physics / math preprints |
+| INSPIRE-HEP | High-energy physics |
+| Europe PMC | Life sciences literature |
+| PubMed | Biomedical gold-standard index |
+| bioRxiv / medRxiv | Life-science and clinical preprints |
+| PLOS | Open-access life / computational biology journals |
+| ERIC | Education / social-science literature |
+
+Specialty indexes activate by research field when intent is known; with no field filter, every index runs so coverage stays dense.
 
 ## Local
 

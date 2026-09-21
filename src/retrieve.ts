@@ -1,11 +1,22 @@
 import type { Intent, Paper, TopicCandidate } from "./types.js";
+import {
+  searchCrossref,
+  searchDoaj,
+  searchEric,
+  searchInspire,
+  searchLifeSciencePreprints,
+  searchOpenAire,
+  searchPlos,
+  searchPubmed,
+} from "./indexes.js";
 import { sanitizeSearchQuery, topicSearchQuery } from "./query.js";
 import { searchArxiv, searchEuropePmc } from "./sources.js";
+import type { PaperSource } from "./types.js";
 
 const OPENALEX = "https://api.openalex.org";
 const S2 = "https://api.semanticscholar.org/graph/v1";
 const MAILTO = process.env.OPENALEX_MAILTO ?? "openreach@localhost";
-const USER_AGENT = "openreach/0.1 (research; mailto:openreach@localhost)";
+const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
 
 export function invertAbstract(
   inverted: Record<string, number[]> | null | undefined,
@@ -218,17 +229,60 @@ export interface RetrieveOptions {
   relatedLimit?: number;
   arxivLimit?: number;
   europePmcLimit?: number;
+  crossrefLimit?: number;
+  pubmedLimit?: number;
+  inspireLimit?: number;
+  ericLimit?: number;
+  doajLimit?: number;
+  openaireLimit?: number;
+  preprintLimit?: number;
+  plosLimit?: number;
   /** Topic ids already filtered as relevant by Jev. */
   topicIds?: string[];
-  /** When set, Europe PMC runs for biomed (and always for other/cs soft). */
+  /** When set, specialty indexes gate by research field. */
   field?: Intent["field"];
 }
 
+/** Specialty indexes beyond the always-on general layer. */
+export function specialtyIndexesFor(
+  field: Intent["field"] | undefined,
+): PaperSource[] {
+  if (field === undefined || field === "other") {
+    return [
+      "arxiv",
+      "inspire",
+      "europe_pmc",
+      "pubmed",
+      "biorxiv",
+      "medrxiv",
+      "plos",
+      "eric",
+    ];
+  }
+  switch (field) {
+    case "cs":
+      return ["arxiv"];
+    case "physics":
+      return ["arxiv", "inspire"];
+    case "biomed":
+      return ["europe_pmc", "pubmed", "biorxiv", "medrxiv", "plos"];
+    case "social":
+      return ["eric"];
+    default: {
+      const _exhaustive: never = field;
+      return _exhaustive;
+    }
+  }
+}
+
 /**
- * High-reward sources:
- * - OpenAlex + Semantic Scholar (general)
- * - arXiv (preprints; especially CS / physics / ML)
- * - Europe PMC (biomed when intent says so, or as light boost for other)
+ * Coverage map (field undefined ⇒ run every specialty):
+ * - Always: OpenAlex, Semantic Scholar, Crossref, OpenAIRE, DOAJ
+ * - CS: arXiv
+ * - Physics: arXiv, INSPIRE-HEP
+ * - Biomed: Europe PMC, PubMed, bioRxiv/medRxiv, PLOS
+ * - Social: ERIC
+ * - Other: all specialty indexes
  */
 export async function retrieveCandidates(
   query: string,
@@ -239,22 +293,55 @@ export async function retrieveCandidates(
   const relatedLimit = options.relatedLimit ?? 15;
   const arxivLimit = options.arxivLimit ?? 25;
   const europePmcLimit = options.europePmcLimit ?? 25;
-  const field = options.field;
+  const crossrefLimit = options.crossrefLimit ?? 25;
+  const pubmedLimit = options.pubmedLimit ?? 25;
+  const inspireLimit = options.inspireLimit ?? 25;
+  const ericLimit = options.ericLimit ?? 25;
+  const doajLimit = options.doajLimit ?? 25;
+  const openaireLimit = options.openaireLimit ?? 25;
+  const preprintLimit = options.preprintLimit ?? 25;
+  const plosLimit = options.plosLimit ?? 25;
+  const specialty = new Set(specialtyIndexesFor(options.field));
 
-  const wantArxiv =
-    field === undefined ||
-    field === "cs" ||
-    field === "physics" ||
-    field === "other";
-  const wantEuropePmc =
-    field === undefined || field === "biomed" || field === "other";
-
-  const [oa, s2, arxiv, epmc] = await Promise.all([
+  const [
+    oa,
+    s2,
+    crossref,
+    openaire,
+    doaj,
+    arxiv,
+    epmc,
+    pubmed,
+    preprints,
+    plos,
+    inspire,
+    eric,
+  ] = await Promise.all([
     searchOpenAlexWorks(query, keywordLimit),
     searchSemanticScholar(query, keywordLimit),
-    wantArxiv ? searchArxiv(query, arxivLimit) : Promise.resolve([]),
-    wantEuropePmc
+    searchCrossref(query, crossrefLimit),
+    searchOpenAire(query, openaireLimit),
+    searchDoaj(query, doajLimit),
+    specialty.has("arxiv")
+      ? searchArxiv(query, arxivLimit)
+      : Promise.resolve([]),
+    specialty.has("europe_pmc")
       ? searchEuropePmc(query, europePmcLimit)
+      : Promise.resolve([]),
+    specialty.has("pubmed")
+      ? searchPubmed(query, pubmedLimit)
+      : Promise.resolve([]),
+    specialty.has("biorxiv") || specialty.has("medrxiv")
+      ? searchLifeSciencePreprints(query, preprintLimit)
+      : Promise.resolve([]),
+    specialty.has("plos")
+      ? searchPlos(query, plosLimit)
+      : Promise.resolve([]),
+    specialty.has("inspire")
+      ? searchInspire(query, inspireLimit)
+      : Promise.resolve([]),
+    specialty.has("eric")
+      ? searchEric(query, ericLimit)
       : Promise.resolve([]),
   ]);
 
@@ -276,8 +363,16 @@ export async function retrieveCandidates(
   return [
     ...oa.papers,
     ...s2,
+    ...crossref,
+    ...openaire,
+    ...doaj,
     ...arxiv,
     ...epmc,
+    ...pubmed,
+    ...preprints,
+    ...plos,
+    ...inspire,
+    ...eric,
     ...topicPapers,
     ...related,
   ];

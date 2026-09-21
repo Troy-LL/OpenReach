@@ -1,7 +1,7 @@
 import type { Paper } from "./types.js";
 import { sanitizeSearchQuery } from "./query.js";
 
-const USER_AGENT = "openreach/0.1 (research; mailto:openreach@localhost)";
+const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
 const ARXIV = "https://export.arxiv.org/api/query";
 const EUROPE_PMC =
   "https://www.ebi.ac.uk/europepmc/webservices/rest/search";

@@ -3,8 +3,17 @@ import type { PaperSource, RankedPaper } from "./types.js";
 export const PAPER_SOURCES: PaperSource[] = [
   "openalex",
   "semantic_scholar",
+  "crossref",
+  "openaire",
+  "doaj",
   "arxiv",
+  "inspire",
   "europe_pmc",
+  "pubmed",
+  "biorxiv",
+  "medrxiv",
+  "plos",
+  "eric",
   "related",
 ];
 

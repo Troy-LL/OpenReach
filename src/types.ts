@@ -3,7 +3,16 @@ export type PaperSource =
   | "semantic_scholar"
   | "related"
   | "arxiv"
-  | "europe_pmc";
+  | "europe_pmc"
+  | "crossref"
+  | "pubmed"
+  | "inspire"
+  | "eric"
+  | "doaj"
+  | "openaire"
+  | "biorxiv"
+  | "medrxiv"
+  | "plos";
 
 export interface Paper {
   id: string;
