@@ -12,7 +12,7 @@ export function remoteMcpUrl(origin?: string): string {
   return HOSTED_MCP_URL;
 }
 
-export function cursorMcpSnippet(key: string, url = HOSTED_MCP_URL): string {
+export function mcpConfigSnippet(key: string, url = HOSTED_MCP_URL): string {
   return JSON.stringify(
     {
       mcpServers: {

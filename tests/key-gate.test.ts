@@ -44,13 +44,22 @@ describe("KeyGate TypeSafe console footer", () => {
 });
 
 describe("Connect MCP after KeyGate", () => {
-  it("copies a Cursor mcp.json snippet with the hosted URL and browser key header", () => {
+  it("copies a hosted MCP config with the browser key header", () => {
     expect(connectMcp).toContain("Connect MCP");
     expect(connectMcp).toContain("Copy config");
-    expect(connectMcp).toContain("cursorMcpSnippet");
+    expect(connectMcp).toContain("mcpConfigSnippet");
     expect(connectMcp).toContain("remoteMcpUrl");
+    expect(connectMcp).toMatch(/MCP-capable agent|connect to (your )?agent/i);
     expect(connectMcp).toMatch(/needs your TypeSafe key from this browser/i);
     expect(connectMcp).toMatch(/don.t store it on the server/i);
+    expect(connectMcp).not.toMatch(/Cursor|mcp\.json/i);
+  });
+
+  it("shows an agent-agnostic error when the clipboard write does not stick", () => {
+    expect(connectMcp).toMatch(/navigator\.clipboard\.writeText/);
+    expect(connectMcp).toMatch(/role="alert"|status="danger"/);
+    expect(connectMcp).toMatch(/Couldn.t copy|Could not copy/i);
+    expect(connectMcp).not.toMatch(/Cursor|mcp\.json/i);
   });
 
   it("renders the card on the keyed landing, not on KeyGate", () => {
