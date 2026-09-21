@@ -14,11 +14,12 @@ import { sanitizeSearchQuery, topicSearchQuery } from "./query.js";
 import { resolvePaperUrl } from "./paper-url.js";
 import { searchArxiv, searchEuropePmc } from "./sources.js";
 import type { PaperSource } from "./types.js";
+import { fetchUpstreamJson, settleIndex } from "./upstream.js";
 
 const OPENALEX = "https://api.openalex.org";
 const S2 = "https://api.semanticscholar.org/graph/v1";
 const MAILTO = process.env.OPENALEX_MAILTO ?? "openreach@localhost";
-const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
+export const RELATED_SKIP_AFTER = 80;
 export const OPENALEX_WORK_SELECT =
   "id,doi,title,display_name,publication_year,primary_location,best_oa_location,open_access,abstract_inverted_index,related_works,authorships";
 export const S2_PAPER_FIELDS =
@@ -42,23 +43,7 @@ async function getJson<T>(
   url: string,
   headers: Record<string, string> = {},
 ): Promise<T | null> {
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": USER_AGENT,
-      ...headers,
-    },
-  });
-  if (res.status === 429) {
-    return null;
-  }
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(
-      `HTTP ${res.status} for ${url}${body ? `: ${body.slice(0, 200)}` : ""}`,
-    );
-  }
-  return (await res.json()) as T;
+  return fetchUpstreamJson<T>(url, headers);
 }
 
 interface OpenAlexLocation {
@@ -265,6 +250,8 @@ export interface RetrieveOptions {
   topicIds?: string[];
   /** When set, specialty indexes gate by research field. */
   field?: Intent["field"];
+  /** Skip the related-works follow-up once the first wave has this many unique ids. */
+  relatedSkipAfter?: number;
 }
 
 /** Specialty indexes beyond the always-on general layer. */
@@ -326,6 +313,8 @@ export async function retrieveCandidates(
   const preprintLimit = options.preprintLimit ?? 25;
   const plosLimit = options.plosLimit ?? 25;
   const specialty = new Set(specialtyIndexesFor(options.field));
+  const relatedSkipAfter = options.relatedSkipAfter ?? RELATED_SKIP_AFTER;
+  const empty: Paper[] = [];
 
   const [
     oa,
@@ -341,32 +330,35 @@ export async function retrieveCandidates(
     inspire,
     eric,
   ] = await Promise.all([
-    searchOpenAlexWorks(query, keywordLimit),
-    searchSemanticScholar(query, keywordLimit),
-    searchCrossref(query, crossrefLimit),
-    searchOpenAire(query, openaireLimit),
-    searchDoaj(query, doajLimit),
+    settleIndex(searchOpenAlexWorks(query, keywordLimit), {
+      papers: empty,
+      relatedIds: [] as string[],
+    }),
+    settleIndex(searchSemanticScholar(query, keywordLimit), empty),
+    settleIndex(searchCrossref(query, crossrefLimit), empty),
+    settleIndex(searchOpenAire(query, openaireLimit), empty),
+    settleIndex(searchDoaj(query, doajLimit), empty),
     specialty.has("arxiv")
-      ? searchArxiv(query, arxivLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchArxiv(query, arxivLimit), empty)
+      : empty,
     specialty.has("europe_pmc")
-      ? searchEuropePmc(query, europePmcLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchEuropePmc(query, europePmcLimit), empty)
+      : empty,
     specialty.has("pubmed")
-      ? searchPubmed(query, pubmedLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchPubmed(query, pubmedLimit), empty)
+      : empty,
     specialty.has("biorxiv") || specialty.has("medrxiv")
-      ? searchLifeSciencePreprints(query, preprintLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchLifeSciencePreprints(query, preprintLimit), empty)
+      : empty,
     specialty.has("plos")
-      ? searchPlos(query, plosLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchPlos(query, plosLimit), empty)
+      : empty,
     specialty.has("inspire")
-      ? searchInspire(query, inspireLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchInspire(query, inspireLimit), empty)
+      : empty,
     specialty.has("eric")
-      ? searchEric(query, ericLimit)
-      : Promise.resolve([]),
+      ? settleIndex(searchEric(query, ericLimit), empty)
+      : empty,
   ]);
 
   const topicPapers =
@@ -375,16 +367,14 @@ export async function retrieveCandidates(
           await Promise.all(
             options.topicIds
               .slice(0, 3)
-              .map((id) => searchOpenAlexByTopic(id, topicPaperLimit)),
+              .map((id) =>
+                settleIndex(searchOpenAlexByTopic(id, topicPaperLimit), empty),
+              ),
           )
         ).flat()
       : [];
 
-  const related = await fetchOpenAlexWorksByIds(
-    oa.relatedIds.slice(0, relatedLimit),
-  );
-
-  return [
+  const firstWave = [
     ...oa.papers,
     ...s2,
     ...crossref,
@@ -398,6 +388,15 @@ export async function retrieveCandidates(
     ...inspire,
     ...eric,
     ...topicPapers,
-    ...related,
   ];
+  const uniqueFirst = new Set(firstWave.map((paper) => paper.id));
+  const related =
+    uniqueFirst.size >= relatedSkipAfter
+      ? empty
+      : await settleIndex(
+          fetchOpenAlexWorksByIds(oa.relatedIds.slice(0, relatedLimit)),
+          empty,
+        );
+
+  return [...firstWave, ...related];
 }

@@ -1,3 +1,4 @@
+import { guessField } from "./field-guess.js";
 import { classifyIntent, createClient } from "./intent.js";
 import { hasApiKey } from "./keys.js";
 import {
@@ -7,7 +8,7 @@ import {
 } from "./gate.js";
 import { splitQuery } from "./query-split.js";
 import { rerankPapers } from "./rerank.js";
-import { retrieveCandidates } from "./retrieve.js";
+import { cachedRetrieveCandidates } from "./retrieve-cache.js";
 import {
   DEFAULT_INTENT,
   createSearchSession,
@@ -81,8 +82,9 @@ export async function findMoreLikeThis(
 ): Promise<SearchResult> {
   const seedQuery = seedQueryFromPaper(seed);
   const facets = splitQuery(`${seed.title} ${seed.abstract}`);
+  const field = guessField(`${seed.title} ${seed.abstract}`);
   const [raw, classified] = await Promise.all([
-    retrieveCandidates(seedQuery, RETRIEVE_LIMITS),
+    cachedRetrieveCandidates(seedQuery, { ...RETRIEVE_LIMITS, field }),
     resolveIntent(seedQuery),
   ]);
   const remaining = raw.filter((p) => !isSeedPaper(p, seed));

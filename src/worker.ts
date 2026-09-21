@@ -1,10 +1,16 @@
 import { createApp } from "./app.js";
 import { createMemoryKeyStore, runWithKeyStore } from "./keys.js";
+import { runWithRetrieveBucket } from "./retrieve-cache.js";
 import {
-  createBucketSessionBackend,
+  createCachedBucketSessionBackend,
   runWithSessionBackend,
   type SessionBucket,
 } from "./session.js";
+import {
+  RETRIEVE_SHARDS,
+  SESSION_SHARDS,
+  shardName,
+} from "./store-keys.js";
 import { OpenReachStore } from "./store-do.js";
 
 export { OpenReachStore };
@@ -22,19 +28,29 @@ function stub(env: WorkerEnv, name: string): DurableObjectStub<OpenReachStore> {
   return env.STORE.get(env.STORE.idFromName(name));
 }
 
-function sessionBucket(env: WorkerEnv): SessionBucket {
+function shardedBucket(
+  env: WorkerEnv,
+  prefix: string,
+  shards: number,
+): SessionBucket {
   return {
-    get: (id) => stub(env, `session:${id}`).getValue(),
-    put: (id, value, ttlMs) => stub(env, `session:${id}`).putValue(value, ttlMs),
-    delete: (id) => stub(env, `session:${id}`).deleteValue(),
+    get: (id) => stub(env, shardName(prefix, id, shards)).getValue(id),
+    put: (id, value, ttlMs) =>
+      stub(env, shardName(prefix, id, shards)).putValue(id, value, ttlMs),
+    delete: (id) => stub(env, shardName(prefix, id, shards)).deleteValue(id),
   };
 }
 
 export default {
   async fetch(request: Request, env: WorkerEnv): Promise<Response> {
-    const sessions = createBucketSessionBackend(sessionBucket(env));
+    const sessions = createCachedBucketSessionBackend(
+      shardedBucket(env, "sess", SESSION_SHARDS),
+    );
+    const retrieves = shardedBucket(env, "ret", RETRIEVE_SHARDS);
     return runWithKeyStore(createMemoryKeyStore(), () =>
-      runWithSessionBackend(sessions, () => app.fetch(request)),
+      runWithSessionBackend(sessions, () =>
+        runWithRetrieveBucket(retrieves, () => app.fetch(request)),
+      ),
     );
   },
 };

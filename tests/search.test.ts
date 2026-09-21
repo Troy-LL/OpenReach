@@ -175,7 +175,10 @@ describe("findPapers retrieve path", () => {
       scoreFirst: DEFAULT_PAGE_SIZE,
     });
 
-    expect(retrieveCandidatesMock).toHaveBeenCalled();
+    expect(retrieveCandidatesMock).toHaveBeenCalledWith(
+      query,
+      expect.objectContaining({ field: expect.any(String) }),
+    );
     expect(scoreSpy).toHaveBeenCalledTimes(1);
     const scoredIds = scoreSpy.mock.calls[0]?.[1] ?? [];
     expect(scoredIds).toHaveLength(DEFAULT_PAGE_SIZE);

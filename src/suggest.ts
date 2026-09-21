@@ -1,8 +1,8 @@
 import { sanitizeSearchQuery } from "./query.js";
+import { fetchUpstreamJson } from "./upstream.js";
 
 const OPENALEX = "https://api.openalex.org";
 const MAILTO = process.env.OPENALEX_MAILTO ?? "openreach@localhost";
-const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
 
 export type SuggestKind = "work" | "topic" | "concept";
 
@@ -75,15 +75,8 @@ async function fetchAutocomplete(
   const url =
     `${OPENALEX}/autocomplete/${entity}?q=${encodeURIComponent(query)}` +
     `&mailto=${encodeURIComponent(MAILTO)}`;
-  const res = await fetch(url, {
-    headers: {
-      Accept: "application/json",
-      "User-Agent": USER_AGENT,
-    },
-  });
-  if (res.status === 429 || !res.ok) return [];
-  const data = (await res.json()) as { results?: OpenAlexSuggestHit[] };
-  return data.results ?? [];
+  const data = await fetchUpstreamJson<{ results?: OpenAlexSuggestHit[] }>(url);
+  return data?.results ?? [];
 }
 
 export async function suggestQueries(

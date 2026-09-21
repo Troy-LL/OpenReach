@@ -1,26 +1,49 @@
 import { DurableObject } from "cloudflare:workers";
 
-/** Short-lived search sessions. Visitor TypeSafe keys are not stored here. */
+type StoreEntry = { v: string; exp: number };
+
+/** Short-lived search sessions and retrieve cache. Visitor TypeSafe keys are not stored here. */
 export class OpenReachStore extends DurableObject {
-  async getValue(): Promise<string | null> {
-    return (await this.ctx.storage.get<string>("v")) ?? null;
+  async getValue(key = "v"): Promise<string | null> {
+    const row = await this.ctx.storage.get<StoreEntry>(key);
+    if (!row) return null;
+    if (typeof row.exp === "number" && row.exp <= Date.now()) {
+      await this.ctx.storage.delete(key);
+      return null;
+    }
+    return typeof row.v === "string" ? row.v : null;
   }
 
-  async putValue(value: string, ttlMs?: number): Promise<void> {
-    await this.ctx.storage.put("v", value);
-    if (ttlMs && ttlMs > 0) {
-      await this.ctx.storage.setAlarm(Date.now() + ttlMs);
-    } else {
-      await this.ctx.storage.deleteAlarm();
+  async putValue(key: string, value: string, ttlMs?: number): Promise<void> {
+    const exp =
+      ttlMs && ttlMs > 0 ? Date.now() + ttlMs : Date.now() + 15 * 60 * 1000;
+    await this.ctx.storage.put(key, { v: value, exp });
+    const alarm = await this.ctx.storage.getAlarm();
+    if (alarm === null || alarm > exp) {
+      await this.ctx.storage.setAlarm(exp);
     }
   }
 
-  async deleteValue(): Promise<void> {
-    await this.ctx.storage.delete("v");
-    await this.ctx.storage.deleteAlarm();
+  async deleteValue(key = "v"): Promise<void> {
+    await this.ctx.storage.delete(key);
   }
 
   async alarm(): Promise<void> {
-    await this.ctx.storage.delete("v");
+    const now = Date.now();
+    const all = await this.ctx.storage.list<StoreEntry>();
+    let next = Number.POSITIVE_INFINITY;
+    for (const [key, row] of all) {
+      if (!row || typeof row !== "object" || typeof row.exp !== "number") {
+        continue;
+      }
+      if (row.exp <= now) {
+        await this.ctx.storage.delete(key);
+      } else if (row.exp < next) {
+        next = row.exp;
+      }
+    }
+    if (Number.isFinite(next)) {
+      await this.ctx.storage.setAlarm(next);
+    }
   }
 }

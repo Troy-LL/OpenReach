@@ -4,19 +4,19 @@ import type { QueryFacets } from "./query-split.js";
 import type { Paper } from "./types.js";
 
 export const RETRIEVE_LIMITS = {
-  keywordLimit: 55,
-  arxivLimit: 50,
-  europePmcLimit: 50,
-  crossrefLimit: 50,
-  pubmedLimit: 50,
-  inspireLimit: 45,
-  ericLimit: 45,
-  doajLimit: 45,
-  openaireLimit: 45,
-  preprintLimit: 45,
-  plosLimit: 45,
-  relatedLimit: 40,
-  topicPaperLimit: 15,
+  keywordLimit: 30,
+  arxivLimit: 20,
+  europePmcLimit: 20,
+  crossrefLimit: 20,
+  pubmedLimit: 20,
+  inspireLimit: 20,
+  ericLimit: 20,
+  doajLimit: 20,
+  openaireLimit: 20,
+  preprintLimit: 20,
+  plosLimit: 20,
+  relatedLimit: 20,
+  topicPaperLimit: 8,
 } as const;
 
 export interface FindOptions {

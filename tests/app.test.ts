@@ -38,6 +38,7 @@ describe("HTTP API", () => {
     expect(res.status).toBe(200);
     const body = (await res.json()) as SearchResult;
     expect(body.papers.length).toBe(DEMO_RESULT.papers.length);
+    expect(res.headers.get("Cache-Control")).toMatch(/max-age=60/);
     expect(body.question).toContain("residual");
     const unet = body.papers.find((p) => p.id === "epmc:unet");
     expect(unet?.url).toMatch(/pmc\/articles\/PMC6435980|articles\/PMC6435980/i);
@@ -131,6 +132,7 @@ describe("HTTP API", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.suggestions).toHaveLength(1);
+    expect(res.headers.get("Cache-Control")).toMatch(/max-age=60/);
     expect(body.suggestions[0].text).toContain("Residual");
   });
 

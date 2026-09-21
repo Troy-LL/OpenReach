@@ -3,6 +3,10 @@ import { describe, expect, it } from "vitest";
 
 const wrangler = readFileSync(new URL("../wrangler.jsonc", import.meta.url), "utf8");
 const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
+const assetHeaders = readFileSync(
+  new URL("../web/public/_headers", import.meta.url),
+  "utf8",
+);
 
 describe("Cloudflare Workers config", () => {
   it("deploys Worker openreach on openreach.niched.tech", () => {
@@ -28,5 +32,12 @@ describe("Cloudflare Workers config", () => {
     expect(readme).toContain("X-Typesafe-Key");
     expect(readme).toMatch(/npm run mcp/);
     expect(readme).toMatch(/Do not set `TYPESAFE_API_KEY` as a Worker secret/);
+    expect(readme).toMatch(/hashed SPA assets/i);
+  });
+
+  it("sets long-lived cache headers on fingerprinted SPA assets", () => {
+    expect(assetHeaders).toMatch(/\/assets\/\*/);
+    expect(assetHeaders).toMatch(/max-age=31536000/);
+    expect(assetHeaders).toMatch(/immutable/);
   });
 });

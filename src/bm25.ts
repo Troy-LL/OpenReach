@@ -1,4 +1,4 @@
-export const DEFAULT_BM25_CAP = 400;
+export const DEFAULT_BM25_CAP = 200;
 export const DEFAULT_BM25_MIN_SCORE = 0;
 
 const K1 = 1.2;

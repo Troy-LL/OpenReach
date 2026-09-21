@@ -2,7 +2,16 @@ import { Alert, Button, EmptyState, SearchField } from "@heroui/react";
 import { applyFilters, DEFAULT_FILTERS, type ResultFilters } from "@shared/filters";
 import { DEFAULT_PAGE_SIZE, paginate } from "@shared/pagination";
 import type { RankedPaper, SearchResult } from "@shared/types";
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import {
   clearApiKey,
   getHealth,
@@ -12,7 +21,6 @@ import {
   searchPapers,
 } from "./api";
 import { hasClientKey, loadClientKey } from "./client-key";
-import { ConnectMcp } from "./ConnectMcp";
 import { ExportBar } from "./ExportBar";
 import { Filters } from "./Filters";
 import { KeyLockedChip } from "./GatedHint";
@@ -23,6 +31,11 @@ import { ResultList } from "./ResultList";
 import { Shell } from "./Shell";
 import { BootSkeleton, FilterSkeleton, SearchSkeleton } from "./Skeletons";
 import { SuggestField } from "./SuggestField";
+
+const ConnectMcp = lazy(async () => {
+  const mod = await import("./ConnectMcp");
+  return { default: mod.ConnectMcp };
+});
 
 function mergeScored(current: RankedPaper[], incoming: RankedPaper[]): RankedPaper[] {
   if (incoming.length === 0) return current;
@@ -312,7 +325,9 @@ export function App() {
             Load sample results
           </Button>
         </div>
-        <ConnectMcp apiKey={loadClientKey()} />
+        <Suspense fallback={null}>
+          <ConnectMcp apiKey={loadClientKey()} />
+        </Suspense>
       </Shell>
     );
   }
