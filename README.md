@@ -28,7 +28,7 @@ npm run find -- --json --score-first 0 "your question"
 npm run find -- --demo
 ```
 
-`--json` prints a machine-readable payload, `--score-first N` sets how many papers Jev scores immediately (the CLI scores 12 by default, and `0` skips scoring so you see the gated candidates as retrieved), and `--demo` runs against the sample papers without a key.
+`--json` prints a machine-readable payload, `--score-first N` sets how many papers Jev scores immediately (the CLI scores 12 by default, and `0` skips scoring so you see the gated candidates as retrieved), and `--demo` runs against the sample papers without a key. APA and BibTeX export use the author names the indexes returned; if an index omitted names, the citation still says `[Author unknown]`.
 
 ## Indexes
 

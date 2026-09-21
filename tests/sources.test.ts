@@ -32,6 +32,7 @@ describe("parseArxivAtom", () => {
     expect(papers[0].url).toBe("https://arxiv.org/abs/1512.03385");
     expect(papers[0].doi).toBe("10.48550/arXiv.1512.03385");
     expect(papers[0].source).toBe("arxiv");
+    expect(papers[0].authors).toEqual(["Kaiming He"]);
   });
 });
 

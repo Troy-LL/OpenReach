@@ -67,6 +67,13 @@ export function PaperCard({
         <h2 className="mt-0 mb-2 text-[1.15rem] leading-snug font-semibold text-balance">
           {heading}
         </h2>
+        {paper.authors && paper.authors.length > 0 ? (
+          <p className="text-muted mt-0 mb-2 text-sm text-pretty">
+            {paper.authors.length > 4
+              ? `${paper.authors.slice(0, 4).join(", ")}, et al.`
+              : paper.authors.join(", ")}
+          </p>
+        ) : null}
         <div className="mb-3 flex flex-wrap items-center gap-2">
           {paper.venue ? (
             <Chip size="sm" variant="soft">

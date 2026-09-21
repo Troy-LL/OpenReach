@@ -1,4 +1,5 @@
 import type { Paper, PaperSource } from "./types.js";
+import { authorsFromStringList, cleanAuthorNames, displayNameFromParts } from "./authors.js";
 import { sanitizeSearchQuery } from "./query.js";
 
 const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
@@ -61,6 +62,7 @@ export interface CrossrefWork {
   "published-print"?: { "date-parts"?: number[][] };
   "published-online"?: { "date-parts"?: number[][] };
   created?: { "date-parts"?: number[][] };
+  author?: { given?: string; family?: string; name?: string }[];
 }
 
 export function parseCrossrefItems(items: CrossrefWork[]): Paper[] {
@@ -83,6 +85,7 @@ export function parseCrossrefItems(items: CrossrefWork[]): Paper[] {
         doi,
         url: item.URL ?? (doi ? `https://doi.org/${doi}` : null),
         source: "crossref",
+        authors: authorsFromStringList(item.author),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -121,6 +124,21 @@ export function parsePubmedXml(xml: string): Paper[] {
       block.match(/<Journal>[\s\S]*?<Title>([\s\S]*?)<\/Title>/i)?.[1] ??
         "PubMed",
     );
+    const authors = cleanAuthorNames(
+      (block.match(/<Author\b[\s\S]*?<\/Author>/gi) ?? []).map((authorBlock) => {
+        const last = stripMarkup(
+          authorBlock.match(/<LastName>([\s\S]*?)<\/LastName>/i)?.[1] ?? "",
+        );
+        const fore = stripMarkup(
+          authorBlock.match(/<ForeName>([\s\S]*?)<\/ForeName>/i)?.[1] ?? "",
+        );
+        const collective = stripMarkup(
+          authorBlock.match(/<CollectiveName>([\s\S]*?)<\/CollectiveName>/i)?.[1] ??
+            "",
+        );
+        return displayNameFromParts(fore, last, collective);
+      }),
+    );
 
     papers.push({
       id: `pmid:${pmid}`,
@@ -131,6 +149,7 @@ export function parsePubmedXml(xml: string): Paper[] {
       doi,
       url: `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`,
       source: "pubmed",
+      authors,
     });
   }
 
@@ -145,6 +164,7 @@ export interface InspireHit {
     dois?: { value?: string }[];
     publication_info?: { journal_title?: string; year?: number }[];
     earliest_date?: string;
+    authors?: { full_name?: string; first_name?: string; last_name?: string }[];
   };
 }
 
@@ -174,6 +194,7 @@ export function parseInspireHits(hits: InspireHit[]): Paper[] {
           ? `https://doi.org/${doi}`
           : `https://inspirehep.net/literature/${id}`,
         source: "inspire",
+        authors: authorsFromStringList(meta.authors),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -189,6 +210,7 @@ export interface EricDoc {
   issn?: string | string[];
   url?: string[];
   doi?: string[];
+  author?: string | string[];
 }
 
 export function parseEricDocs(docs: EricDoc[]): Paper[] {
@@ -215,6 +237,7 @@ export function parseEricDocs(docs: EricDoc[]): Paper[] {
           url ??
           `https://eric.ed.gov/?id=${encodeURIComponent(id)}`,
         source: "eric",
+        authors: authorsFromStringList(doc.author),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -228,6 +251,7 @@ export interface DoajHit {
     journal?: { title?: string };
     identifier?: { id?: string; type?: string }[];
     link?: { url?: string; type?: string }[];
+    author?: { name?: string }[];
   };
 }
 
@@ -255,6 +279,7 @@ export function parseDoajResults(results: DoajHit[]): Paper[] {
         doi,
         url,
         source: "doaj",
+        authors: authorsFromStringList(bib.author),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -318,6 +343,7 @@ export function parseOpenAireResults(results: OpenAireResult[]): Paper[] {
             ? `https://pubmed.ncbi.nlm.nih.gov/${pmid}/`
             : null,
         source: "openaire",
+        authors: authorsFromStringList(ent.creator),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -331,6 +357,7 @@ export interface PreprintHit {
   journalTitle?: string;
   doi?: string;
   source?: string;
+  authorString?: string;
 }
 
 function preprintSource(hit: PreprintHit): PaperSource | null {
@@ -366,6 +393,7 @@ export function parsePreprintHits(hits: PreprintHit[]): Paper[] {
           ? `https://${host}/content/${doi}`
           : `https://${host}/`,
         source,
+        authors: authorsFromStringList(hit.authorString),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -520,6 +548,7 @@ export interface PlosDoc {
   abstract?: string[];
   publication_date?: string;
   journal?: string;
+  author_display?: string[];
 }
 
 export function parsePlosDocs(docs: PlosDoc[]): Paper[] {
@@ -541,6 +570,7 @@ export function parsePlosDocs(docs: PlosDoc[]): Paper[] {
         doi,
         url: doi ? `https://doi.org/${doi}` : null,
         source: "plos",
+        authors: authorsFromStringList(doc.author_display),
       };
     })
     .filter((p): p is Paper => p !== null);
@@ -554,7 +584,7 @@ export async function searchPlos(
   if (!q) return [];
   const url =
     `${PLOS}?q=${encodeURIComponent(q)}` +
-    `&fl=id,title,abstract,publication_date,journal&rows=${rows}&wt=json`;
+    `&fl=id,title,abstract,publication_date,journal,author_display&rows=${rows}&wt=json`;
   const data = await getJson<{
     response?: { docs?: PlosDoc[] };
   }>(url);

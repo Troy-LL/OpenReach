@@ -114,6 +114,9 @@ function parseMoreLikePaper(value: unknown): Paper | null {
     doi: typeof row.doi === "string" ? row.doi : null,
     url: typeof row.url === "string" ? row.url : null,
     source,
+    authors: Array.isArray(row.authors)
+      ? row.authors.filter((a): a is string => typeof a === "string")
+      : undefined,
   };
 }
 

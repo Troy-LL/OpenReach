@@ -26,6 +26,7 @@ export function compactPaper(paper: RankedPaper): {
   doi: string | null;
   url: string | null;
   source: RankedPaper["source"];
+  authors?: string[];
   scored: boolean;
   method: number;
   population: number;
@@ -43,6 +44,7 @@ export function compactPaper(paper: RankedPaper): {
     doi: paper.doi,
     url: paper.url,
     source: paper.source,
+    authors: paper.authors,
     scored: paper.scored,
     method: paper.method,
     population: paper.population,

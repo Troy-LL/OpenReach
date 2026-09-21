@@ -23,6 +23,7 @@ export interface Paper {
   doi: string | null;
   url: string | null;
   source: PaperSource;
+  authors?: string[];
 }
 
 export interface Intent {

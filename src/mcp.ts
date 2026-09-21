@@ -47,6 +47,7 @@ function paperFromToolInput(input: {
   doi?: string | null;
   url?: string | null;
   source?: PaperSource;
+  authors?: string[];
 }): Paper {
   return {
     id: input.id,
@@ -57,6 +58,7 @@ function paperFromToolInput(input: {
     doi: input.doi ?? null,
     url: input.url ?? null,
     source: input.source ?? "openalex",
+    authors: input.authors,
   };
 }
 
@@ -113,6 +115,7 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
         doi: z.string().nullable().optional(),
         url: z.string().nullable().optional(),
         source: z.enum(PAPER_SOURCES).optional(),
+        authors: z.array(z.string()).optional(),
       },
     },
     async (args) => {

@@ -165,6 +165,33 @@ describe("HTTP API", () => {
     expect(body.text).toContain("https://doi.org/");
   });
 
+  it("puts retrieved author names in APA export", async () => {
+    const paper = DEMO_RESULT.papers[0];
+    const app = createApp();
+    const res = await app.request("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        format: "apa",
+        papers: [
+          {
+            id: paper.id,
+            title: paper.title,
+            year: paper.year,
+            venue: paper.venue,
+            doi: paper.doi,
+            url: paper.url,
+            authors: paper.authors,
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.text).toContain("He, Kaiming");
+    expect(body.text).not.toContain("[Author unknown]");
+  });
+
   it("exports BibTeX citations", async () => {
     const paper = DEMO_RESULT.papers[0];
     const app = createApp();

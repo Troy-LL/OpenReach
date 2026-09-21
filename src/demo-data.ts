@@ -28,6 +28,7 @@ export const DEMO_RESULT: SearchResult = {
       doi: "10.1109/cvpr.2016.90",
       url: "https://arxiv.org/abs/1512.03385",
       source: "arxiv",
+      authors: ["Kaiming He", "Xiangyu Zhang", "Shaoqing Ren", "Jian Sun"],
       scored: true,
       method: 4,
       population: 4,

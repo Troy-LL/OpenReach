@@ -20,6 +20,10 @@ describe("parseCrossrefItems", () => {
         "published-print": { "date-parts": [[2020, 1]] },
         "container-title": ["Nature Methods"],
         URL: "https://doi.org/10.1000/example",
+        author: [
+          { given: "Ashish", family: "Vaswani" },
+          { given: "Noam", family: "Shazeer" },
+        ],
       },
     ]);
     expect(papers).toHaveLength(1);
@@ -28,6 +32,7 @@ describe("parseCrossrefItems", () => {
       doi: "10.1000/example",
       year: 2020,
       venue: "Nature Methods",
+      authors: ["Ashish Vaswani", "Noam Shazeer"],
     });
     expect(papers[0].abstract).toBe("We study attention mechanisms.");
     expect(papers[0].title).toBe("A study of attention");
@@ -53,6 +58,10 @@ describe("parsePubmedXml", () => {
       <Article>
         <ArticleTitle>Robust vision transformers</ArticleTitle>
         <Abstract><AbstractText>Vision Transformers perform well.</AbstractText></Abstract>
+        <AuthorList>
+          <Author ValidYN="Y"><LastName>Dosovitskiy</LastName><ForeName>Alexey</ForeName></Author>
+          <Author ValidYN="Y"><LastName>Beyer</LastName><ForeName>Lucas</ForeName></Author>
+        </AuthorList>
         <Journal><Title>Frontiers in AI</Title><JournalIssue><PubDate><Year>2024</Year></PubDate></JournalIssue></Journal>
         <ELocationID EIdType="doi">10.3389/frai.2024.1</ELocationID>
       </Article>
@@ -66,6 +75,7 @@ describe("parsePubmedXml", () => {
       source: "pubmed",
       year: 2024,
       doi: "10.3389/frai.2024.1",
+      authors: ["Alexey Dosovitskiy", "Lucas Beyer"],
     });
     expect(papers[0].url).toContain("pubmed.ncbi.nlm.nih.gov/12345");
   });

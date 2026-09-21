@@ -1,4 +1,5 @@
 import type { Paper } from "./types.js";
+import { authorsFromStringList } from "./authors.js";
 import { sanitizeSearchQuery } from "./query.js";
 
 const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
@@ -45,6 +46,11 @@ export function parseArxivAtom(xml: string): Paper[] {
     const abstract = tag(entry, "summary");
     const published = tag(entry, "published");
     const year = published ? Number(published.slice(0, 4)) || null : null;
+    const authors = authorsFromStringList(
+      [...entry.matchAll(/<author\b[^>]*>[\s\S]*?<name\b[^>]*>([\s\S]*?)<\/name>/gi)].map(
+        (m) => decodeXml(m[1]),
+      ),
+    );
 
     papers.push({
       id: `arxiv:${arxivId}`,
@@ -55,6 +61,7 @@ export function parseArxivAtom(xml: string): Paper[] {
       doi: `10.48550/arXiv.${arxivId}`,
       url: `https://arxiv.org/abs/${arxivId}`,
       source: "arxiv",
+      authors,
     });
   }
 
@@ -71,6 +78,12 @@ interface EuropePmcHit {
   pmid?: string;
   pmcid?: string;
   source?: string;
+  authorString?: string;
+  authorList?: {
+    author?:
+      | { fullName?: string; firstName?: string; lastName?: string }
+      | Array<{ fullName?: string; firstName?: string; lastName?: string }>;
+  };
 }
 
 export function parseEuropePmcResults(hits: EuropePmcHit[]): Paper[] {
@@ -101,6 +114,9 @@ export function parseEuropePmcResults(hits: EuropePmcHit[]): Paper[] {
             ? `https://doi.org/${doi}`
             : `https://europepmc.org/search?query=${encodeURIComponent(title)}`,
         source: "europe_pmc",
+        authors: authorsFromStringList(
+          h.authorList?.author ?? h.authorString,
+        ),
       };
     })
     .filter((p): p is Paper => p !== null);

@@ -4,9 +4,8 @@ export type ExportFormat = "apa" | "bibtex";
 
 export type CiteablePaper = Pick<
   RankedPaper,
-  "id" | "title" | "year" | "venue" | "doi" | "url"
+  "id" | "title" | "year" | "venue" | "doi" | "url" | "authors"
 > & {
-  authors?: string[] | null;
   volume?: string | null;
   issue?: string | null;
   pages?: string | null;

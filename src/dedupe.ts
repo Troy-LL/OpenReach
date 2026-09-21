@@ -40,6 +40,11 @@ function preferIncoming(existing: Paper, incoming: Paper): boolean {
   const incomingVenue = incoming.venue?.trim() ?? "";
   if (!existingVenue && incomingVenue) return true;
 
+  const existingAuthors = existing.authors?.length ?? 0;
+  const incomingAuthors = incoming.authors?.length ?? 0;
+  if (!existingAuthors && incomingAuthors) return true;
+  if (existingAuthors && !incomingAuthors) return false;
+
   return false;
 }
 

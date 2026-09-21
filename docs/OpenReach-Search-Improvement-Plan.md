@@ -84,7 +84,7 @@ Selection UX: user checks papers → **Export APA** (plain text) or **Export .bi
 - **Deterministic templates** — APA 7-style string rules and BibTeX `@article` / `@misc` shapes in code.
 - **No LLM** for citation text. Missing fields → omit or use explicit placeholders the user can fix; never invent authors or page ranges.
 
-Where indexes don’t return authors/volume/pages today, citation quality is a **metadata enrichment** follow-on (still code/API), not a Jev prompt.
+Indexes keep author names when they return them (OpenAlex authorships, Semantic Scholar, Crossref, arXiv Atom, PubMed, and the other mappers). `[Author unknown]` remains only when those feeds had no names. Volume and pages are still a metadata follow-on, not a Jev prompt.
 
 ## 7. Honest tradeoffs
 

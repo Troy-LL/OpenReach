@@ -1,4 +1,5 @@
 import type { Intent, Paper, TopicCandidate } from "./types.js";
+import { authorsFromStringList } from "./authors.js";
 import {
   searchCrossref,
   searchDoaj,
@@ -17,6 +18,8 @@ const OPENALEX = "https://api.openalex.org";
 const S2 = "https://api.semanticscholar.org/graph/v1";
 const MAILTO = process.env.OPENALEX_MAILTO ?? "openreach@localhost";
 const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
+const OPENALEX_WORK_SELECT =
+  "id,doi,title,display_name,publication_year,primary_location,abstract_inverted_index,related_works,authorships";
 
 export function invertAbstract(
   inverted: Record<string, number[]> | null | undefined,
@@ -67,6 +70,7 @@ interface OpenAlexWork {
   } | null;
   abstract_inverted_index?: Record<string, number[]> | null;
   related_works?: string[] | null;
+  authorships?: { author?: { display_name?: string | null } | null }[] | null;
 }
 
 interface OpenAlexList<T> {
@@ -87,9 +91,10 @@ interface S2Paper {
   venue?: string | null;
   url?: string | null;
   externalIds?: { DOI?: string | null } | null;
+  authors?: { name?: string | null }[] | null;
 }
 
-function openAlexToPaper(work: OpenAlexWork, source: Paper["source"]): Paper {
+export function openAlexToPaper(work: OpenAlexWork, source: Paper["source"]): Paper {
   const title = (work.title ?? work.display_name ?? "").trim();
   const doi = work.doi
     ? work.doi.replace(/^https?:\/\/(dx\.)?doi\.org\//i, "")
@@ -105,10 +110,13 @@ function openAlexToPaper(work: OpenAlexWork, source: Paper["source"]): Paper {
       work.primary_location?.landing_page_url ??
       (doi ? `https://doi.org/${doi}` : work.id),
     source,
+    authors: authorsFromStringList(
+      work.authorships?.map((a) => a.author?.display_name ?? ""),
+    ),
   };
 }
 
-function s2ToPaper(p: S2Paper): Paper {
+export function s2ToPaper(p: S2Paper): Paper {
   const doi = p.externalIds?.DOI ?? null;
   return {
     id: `s2:${p.paperId}`,
@@ -119,6 +127,7 @@ function s2ToPaper(p: S2Paper): Paper {
     doi,
     url: p.url ?? (doi ? `https://doi.org/${doi}` : null),
     source: "semantic_scholar",
+    authors: authorsFromStringList(p.authors),
   };
 }
 
@@ -132,7 +141,7 @@ export async function searchOpenAlexWorks(
   const url =
     `${OPENALEX}/works?search=${encodeURIComponent(q)}` +
     `&per_page=${perPage}&mailto=${encodeURIComponent(MAILTO)}` +
-    `&select=id,doi,title,display_name,publication_year,primary_location,abstract_inverted_index,related_works`;
+    `&select=${OPENALEX_WORK_SELECT}`;
   const data = await getJson<OpenAlexList<OpenAlexWork>>(url);
   if (!data) return { papers: [], relatedIds: [] };
 
@@ -151,7 +160,7 @@ export async function searchOpenAlexByTopic(
   const url =
     `${OPENALEX}/works?filter=topics.id:${shortId}` +
     `&per_page=${perPage}&mailto=${encodeURIComponent(MAILTO)}` +
-    `&select=id,doi,title,display_name,publication_year,primary_location,abstract_inverted_index,related_works`;
+    `&select=${OPENALEX_WORK_SELECT}`;
   const data = await getJson<OpenAlexList<OpenAlexWork>>(url);
   if (!data) return [];
   return data.results.map((w) => openAlexToPaper(w, "openalex"));
@@ -198,7 +207,7 @@ export async function fetchOpenAlexWorksByIds(ids: string[]): Promise<Paper[]> {
   const url =
     `${OPENALEX}/works?filter=ids.openalex:${filter}` +
     `&per_page=${unique.length}&mailto=${encodeURIComponent(MAILTO)}` +
-    `&select=id,doi,title,display_name,publication_year,primary_location,abstract_inverted_index,related_works`;
+    `&select=${OPENALEX_WORK_SELECT}`;
   const data = await getJson<OpenAlexList<OpenAlexWork>>(url);
   if (!data) return [];
   return data.results.map((w) => openAlexToPaper(w, "related"));
@@ -217,7 +226,7 @@ export async function searchSemanticScholar(
 
   const url =
     `${S2}/paper/search?query=${encodeURIComponent(q)}` +
-    `&limit=${limit}&fields=paperId,title,abstract,year,venue,externalIds,url`;
+    `&limit=${limit}&fields=paperId,title,abstract,year,venue,externalIds,url,authors`;
   const data = await getJson<{ data?: S2Paper[] }>(url, headers);
   if (!data?.data) return [];
   return data.data.map(s2ToPaper);
