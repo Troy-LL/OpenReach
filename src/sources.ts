@@ -1,5 +1,6 @@
 import type { Paper } from "./types.js";
 import { authorsFromStringList } from "./authors.js";
+import { normalizePmcid, resolvePaperUrl } from "./paper-url.js";
 import { sanitizeSearchQuery } from "./query.js";
 
 const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
@@ -95,10 +96,11 @@ export function parseEuropePmcResults(hits: EuropePmcHit[]): Paper[] {
 
       const doi = h.doi?.trim() || null;
       const yearRaw = h.pubYear != null ? Number(h.pubYear) : NaN;
+      const pmcid = h.pmcid?.trim() ? normalizePmcid(h.pmcid) : null;
       const id = h.pmid
         ? `pmid:${h.pmid}`
-        : h.pmcid
-          ? `pmc:${h.pmcid}`
+        : pmcid
+          ? `pmc:${pmcid}`
           : `epmc:${h.id ?? title}`;
 
       return {
@@ -108,11 +110,15 @@ export function parseEuropePmcResults(hits: EuropePmcHit[]): Paper[] {
         year: Number.isFinite(yearRaw) ? yearRaw : null,
         venue: h.journalTitle ?? "Europe PMC",
         doi,
-        url: h.pmid
-          ? `https://europepmc.org/article/MED/${h.pmid}`
-          : doi
-            ? `https://doi.org/${doi}`
-            : `https://europepmc.org/search?query=${encodeURIComponent(title)}`,
+        url:
+          resolvePaperUrl(
+            [
+              pmcid ? `https://europepmc.org/articles/${pmcid}` : null,
+              h.pmid ? `https://europepmc.org/article/MED/${h.pmid}` : null,
+            ],
+            doi,
+          ) ??
+          `https://europepmc.org/search?query=${encodeURIComponent(title)}`,
         source: "europe_pmc",
         authors: authorsFromStringList(
           h.authorList?.author ?? h.authorString,
