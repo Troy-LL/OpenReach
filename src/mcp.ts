@@ -12,8 +12,19 @@ import {
   demoAgentPayload,
   type AgentDeps,
 } from "./agent.js";
-import { loadLocalKey } from "./keys.js";
+import { hasApiKey, loadLocalKey } from "./keys.js";
 import type { Paper, PaperSource } from "./types.js";
+
+export const MCP_LIVE_KEY_ERROR =
+  "Live search and scoring need a TypeSafe key. Send X-Typesafe-Key (or Authorization: Bearer) on the remote MCP request. Local stdio can use TYPESAFE_API_KEY or data/typesafe.key.";
+
+function liveKeyOrError(): CallToolResult | null {
+  if (hasApiKey()) return null;
+  return {
+    isError: true,
+    content: [{ type: "text", text: MCP_LIVE_KEY_ERROR }],
+  };
+}
 
 const PAPER_SOURCES = [
   "openalex",
@@ -78,6 +89,8 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
       },
     },
     async (args) => {
+      const denied = liveKeyOrError();
+      if (denied) return denied;
       const result = await agentSearch(
         args.question,
         args.score_first ?? 0,
@@ -97,6 +110,8 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
       },
     },
     async (args) => {
+      const denied = liveKeyOrError();
+      if (denied) return denied;
       const result = await agentScore(args.session_id, args.ids, deps);
       return jsonToolResult(result);
     },
@@ -119,6 +134,8 @@ export function createOpenReachMcpServer(deps: AgentDeps = {}): McpServer {
       },
     },
     async (args) => {
+      const denied = liveKeyOrError();
+      if (denied) return denied;
       const result = await agentMoreLike(paperFromToolInput(args), deps);
       return jsonToolResult(result);
     },

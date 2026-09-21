@@ -64,12 +64,36 @@ Under either `npm run dev` or `npm start`, the API listens on port 3000, which y
 | GET | `/api/suggest?q=` | Autocomplete suggestions |
 | POST | `/api/key` | Validate a TypeSafe key (Node also writes `data/typesafe.key`; Workers do not store it) |
 | DELETE | `/api/key` | Remove a Node-local key file |
+| POST | `/mcp` | Remote MCP Streamable HTTP (key via `X-Typesafe-Key` or Bearer) |
 
 Live search and scoring need a key. The hosted UI sends it on Jev calls via the `X-Typesafe-Key` header from `localStorage`. Locally you can also set `TYPESAFE_API_KEY` or save through `POST /api/key` / the UI to `data/typesafe.key` (gitignored). Keys should never be committed.
 
 ## MCP
 
-OpenReach also speaks MCP over stdio, with five tools that wrap the same flows as the HTTP API: `search_papers`, `score_papers`, `more_like_this`, `export_citations`, and `demo_papers`. Start the server with:
+OpenReach speaks MCP over remote Streamable HTTP and local stdio. The tools are the same: `search_papers`, `score_papers`, `more_like_this`, `export_citations`, and `demo_papers`.
+
+### Remote (no checkout)
+
+The hosted Worker serves **https://openreach.niched.tech/mcp** (same `/mcp` path on the `*.workers.dev` fallback). After you paste a TypeSafe key in the UI, the **Connect MCP** card copies a ready Cursor `mcp.json` block that already includes the key from this browser as `X-Typesafe-Key`. We do not store that key on the server.
+
+```json
+{
+  "mcpServers": {
+    "openreach": {
+      "url": "https://openreach.niched.tech/mcp",
+      "headers": {
+        "X-Typesafe-Key": "<your TypeSafe key>"
+      }
+    }
+  }
+}
+```
+
+Paste that one block into Cursor MCP settings. You can also point the same header at an env value in `mcp.json` if you prefer not to embed the key. Live tools refuse to run without `X-Typesafe-Key` or `Authorization: Bearer`. `demo_papers` and `export_citations` work without a key. Do not set `TYPESAFE_API_KEY` as a Worker secret.
+
+### Local stdio
+
+From a checkout, start the stdio server with:
 
 ```bash
 npm run mcp

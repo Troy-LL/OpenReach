@@ -14,6 +14,8 @@ describe("Cloudflare Workers config", () => {
     expect(wrangler).toContain("workers_dev");
     expect(wrangler).not.toMatch(/kv_namespaces/);
     expect(wrangler).not.toContain("openreach.niche.tech");
+    expect(wrangler).toMatch(/run_worker_first[\s\S]*\/mcp/);
+    expect(wrangler).not.toMatch(/TYPESAFE_API_KEY/);
   });
 
   it("documents personal-account deploy on niched.tech", () => {
@@ -22,5 +24,9 @@ describe("Cloudflare Workers config", () => {
     expect(readme).toMatch(/localStorage/);
     expect(readme).toMatch(/does not persist it/i);
     expect(readme).not.toContain("openreach.niche.tech");
+    expect(readme).toContain("https://openreach.niched.tech/mcp");
+    expect(readme).toContain("X-Typesafe-Key");
+    expect(readme).toMatch(/npm run mcp/);
+    expect(readme).toMatch(/Do not set `TYPESAFE_API_KEY` as a Worker secret/);
   });
 });

@@ -2,6 +2,11 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const keyGate = readFileSync(new URL("../web/src/KeyGate.tsx", import.meta.url), "utf8");
+const connectMcp = readFileSync(
+  new URL("../web/src/ConnectMcp.tsx", import.meta.url),
+  "utf8",
+);
+const app = readFileSync(new URL("../web/src/App.tsx", import.meta.url), "utf8");
 
 describe("KeyGate TypeSafe console footer", () => {
   it("links the TypeSafe keys console under the Continue / Browse sample buttons", () => {
@@ -35,5 +40,23 @@ describe("KeyGate TypeSafe console footer", () => {
     expect(keyGate).not.toContain(
       'placeholder="Paste the full key from the TypeSafe console"',
     );
+  });
+});
+
+describe("Connect MCP after KeyGate", () => {
+  it("copies a Cursor mcp.json snippet with the hosted URL and browser key header", () => {
+    expect(connectMcp).toContain("Connect MCP");
+    expect(connectMcp).toContain("Copy config");
+    expect(connectMcp).toContain("cursorMcpSnippet");
+    expect(connectMcp).toContain("remoteMcpUrl");
+    expect(connectMcp).toMatch(/needs your TypeSafe key from this browser/i);
+    expect(connectMcp).toMatch(/don.t store it on the server/i);
+  });
+
+  it("renders the card on the keyed landing, not on KeyGate", () => {
+    expect(app).toContain("ConnectMcp");
+    expect(app).toMatch(/loadClientKey\(\)/);
+    expect(keyGate).not.toContain("ConnectMcp");
+    expect(keyGate).not.toContain("Copy config");
   });
 });

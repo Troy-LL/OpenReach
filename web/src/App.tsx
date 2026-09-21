@@ -12,7 +12,8 @@ import {
   scoreVisible,
   searchPapers,
 } from "./api";
-import { hasClientKey } from "./client-key";
+import { hasClientKey, loadClientKey } from "./client-key";
+import { ConnectMcp } from "./ConnectMcp";
 import { ExportBar } from "./ExportBar";
 import { Filters } from "./Filters";
 import { KeyLockedChip } from "./GatedHint";
@@ -321,6 +322,7 @@ export function App() {
             Load sample results
           </Button>
         </div>
+        <ConnectMcp apiKey={loadClientKey()} />
       </Shell>
     );
   }

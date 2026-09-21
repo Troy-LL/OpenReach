@@ -1,5 +1,6 @@
-import { Hono } from "hono";
+import { Hono, type MiddlewareHandler } from "hono";
 import pkg from "../package.json" with { type: "json" };
+import type { AgentDeps } from "./agent.js";
 import { formatApaList, formatBibtexList, type Citeable } from "./cite.js";
 import { DEMO_RESULT } from "./demo-data.js";
 import {
@@ -8,9 +9,11 @@ import {
   getActiveKeyStore,
   hasApiKey,
   overlayRequestKey,
+  requestTypeSafeKey,
   runWithKeyStore,
   saveLocalKey,
 } from "./keys.js";
+import { handleMcpHttp } from "./mcp-http.js";
 import { clearScoreCache, scoreCacheSize } from "./rerank.js";
 import {
   clearRetrieveCache,
@@ -133,15 +136,31 @@ export function createApp(deps: AppDeps = {}): Hono {
     ((paper: Paper) => findMoreLikeThis(paper, { scoreFirst: 0 }));
   const suggest = deps.suggest ?? ((q: string) => suggestQueries(q));
   const clearCaches = deps.clearCaches ?? clearAllCaches;
+  const mcpDeps: AgentDeps = {
+    search: deps.search
+      ? async (question) => deps.search!(question)
+      : undefined,
+    score: deps.scoreVisible,
+    moreLike: deps.moreLike
+      ? async (paper) => deps.moreLike!(paper)
+      : undefined,
+  };
   const app = new Hono();
 
-  app.use("/api/*", async (c, next) => {
+  const withRequestKey: MiddlewareHandler = async (c, next) => {
     const store = overlayRequestKey(
       getActiveKeyStore(),
-      c.req.header(TYPESAFE_KEY_HEADER),
+      requestTypeSafeKey(
+        c.req.header(TYPESAFE_KEY_HEADER),
+        c.req.header("Authorization"),
+      ),
     );
     await runWithKeyStore(store, () => next());
-  });
+  };
+
+  app.use("/api/*", withRequestKey);
+  app.use("/mcp", withRequestKey);
+  app.all("/mcp", (c) => handleMcpHttp(c.req.raw, mcpDeps));
 
   app.get("/api", (c) =>
     c.json({
@@ -197,10 +216,16 @@ export function createApp(deps: AppDeps = {}): Hono {
             "Forget a Node-local key file. Browser keys are cleared in this device only.",
         },
         {
+          method: "POST",
+          path: "/mcp",
+          purpose:
+            "Remote MCP Streamable HTTP. Live tools need X-Typesafe-Key (or Authorization: Bearer). demo_papers and export_citations work without a key.",
+        },
+        {
           method: "stdio",
           path: "mcp",
           purpose:
-            "Model Context Protocol server: npm run mcp (search, score, more-like, export, demo tools).",
+            "Local stdio MCP: npm run mcp (search, score, more-like, export, demo tools).",
         },
       ],
     }),

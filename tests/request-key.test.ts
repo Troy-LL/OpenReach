@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createApp } from "../src/app.js";
-import { TYPESAFE_KEY_HEADER } from "../src/key-format.js";
+import { requestTypeSafeKey, TYPESAFE_KEY_HEADER } from "../src/key-format.js";
 import {
   createMemoryKeyStore,
   runWithKeyStore,
@@ -55,5 +55,20 @@ describe("request TypeSafe key header", () => {
       app.request("/api/health"),
     );
     expect(((await later.json()) as { hasKey: boolean }).hasKey).toBe(false);
+  });
+
+  it("reads Authorization Bearer when X-Typesafe-Key is absent", async () => {
+    const key = "apikey_bearer_only_1234567890abcd";
+    expect(requestTypeSafeKey(undefined, `Bearer ${key}`)).toBe(key);
+    expect(requestTypeSafeKey(key, "Bearer ignored")).toBe(key);
+    expect(requestTypeSafeKey(undefined, "Basic nope")).toBeUndefined();
+
+    const app = createApp();
+    await runWithKeyStore(createMemoryKeyStore(), async () => {
+      const withBearer = await app.request("/api/health", {
+        headers: { Authorization: `Bearer ${key}` },
+      });
+      expect(((await withBearer.json()) as { hasKey: boolean }).hasKey).toBe(true);
+    });
   });
 });
