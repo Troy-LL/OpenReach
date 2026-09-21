@@ -8,9 +8,11 @@ import {
   clearServerCache,
   getHealth,
   loadDemo,
+  moreLikePaper,
   scoreVisible,
   searchPapers,
 } from "./api";
+import { ExportBar } from "./ExportBar";
 import { Filters } from "./Filters";
 import { KeyGate } from "./KeyGate";
 import { PaginationBar } from "./PaginationBar";
@@ -37,6 +39,7 @@ export function App() {
   const [page, setPage] = useState(1);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const inFlight = useRef(new Set<string>());
   const resultRef = useRef(result);
   resultRef.current = result;
@@ -73,6 +76,7 @@ export function App() {
     setBusy(true);
     setError(null);
     inFlight.current.clear();
+    setSelectedIds(new Set());
     try {
       const next = await action();
       setResult(next);
@@ -103,9 +107,32 @@ export function App() {
     setResult(null);
     setFilters(DEFAULT_FILTERS);
     setPage(1);
+    setSelectedIds(new Set());
     inFlight.current.clear();
     void clearServerCache();
   }, []);
+
+  const toggleSelected = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, []);
+
+  const selectedPapers = useMemo(() => {
+    if (!result) return [];
+    return result.papers.filter((p) => selectedIds.has(p.id));
+  }, [result, selectedIds]);
+
+  function onMoreLike(paper: RankedPaper) {
+    if (busy || !hasKey) return;
+    void run(() => moreLikePaper(paper));
+  }
 
   useEffect(() => {
     const onHide = () => {
@@ -342,7 +369,7 @@ export function App() {
                 No papers match these filters
               </h2>
               <p className="text-muted mb-4 max-w-prose text-pretty">
-                Reset the filters, or loosen the year and relevance sliders.
+                Reset the filters, or loosen the year and score sliders.
               </p>
               <Button className="pressable" variant="secondary" onPress={() => setFilters(DEFAULT_FILTERS)}>
                 Reset filters
@@ -357,12 +384,43 @@ export function App() {
                 {" · "}
                 page {slice.page} of {slice.totalPages}
               </p>
+              <ExportBar
+                busy={busy}
+                papers={selectedPapers}
+                onError={setError}
+              />
               <ResultList
                 items={slice.items}
                 startIndex={slice.startIndex}
                 onVisibleIds={onVisibleIds}
                 renderItem={(paper, index) => (
-                  <PaperCard figure={index + 1} paper={paper} />
+                  <div className="flex items-start gap-3">
+                    <input
+                      aria-label={`Select ${paper.title}`}
+                      checked={selectedIds.has(paper.id)}
+                      className="mt-6 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                      disabled={busy}
+                      type="checkbox"
+                      onChange={(event) =>
+                        toggleSelected(paper.id, event.currentTarget.checked)
+                      }
+                    />
+                    <div className="min-w-0 flex-1">
+                      <PaperCard figure={index + 1} paper={paper} />
+                      <div className="mt-2 flex justify-end">
+                        <Button
+                          aria-label={`Find papers more like ${paper.title}`}
+                          className="pressable"
+                          isDisabled={busy || !hasKey}
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => onMoreLike(paper)}
+                        >
+                          More like this
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
                 )}
               />
               <PaginationBar

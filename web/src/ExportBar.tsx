@@ -1,0 +1,70 @@
+import { Button } from "@heroui/react";
+import type { RankedPaper } from "@shared/types";
+import { exportCitations } from "./api";
+
+function downloadText(filename: string, text: string, mime: string) {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+interface Props {
+  papers: RankedPaper[];
+  busy?: boolean;
+  onError: (message: string) => void;
+}
+
+export function ExportBar({ papers, busy, onError }: Props) {
+  const disabled = busy || papers.length === 0;
+
+  async function onExport(format: "apa" | "bibtex") {
+    try {
+      const { text } = await exportCitations(format, papers);
+      if (format === "apa") {
+        downloadText("openreach.apa.txt", text, "text/plain;charset=utf-8");
+      } else {
+        downloadText("openreach.bib", text, "application/x-bibtex;charset=utf-8");
+      }
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Export failed.");
+    }
+  }
+
+  return (
+    <div
+      aria-label="Export selected papers"
+      className="mb-4 flex flex-wrap items-center gap-2"
+      role="toolbar"
+    >
+      <span className="text-muted text-sm tabular-nums">
+        {papers.length === 0
+          ? "Select papers to export"
+          : `${papers.length} selected`}
+      </span>
+      <Button
+        aria-label="Export selected papers as APA"
+        className="pressable"
+        isDisabled={disabled}
+        size="sm"
+        variant="secondary"
+        onPress={() => void onExport("apa")}
+      >
+        Export APA
+      </Button>
+      <Button
+        aria-label="Export selected papers as BibTeX"
+        className="pressable"
+        isDisabled={disabled}
+        size="sm"
+        variant="secondary"
+        onPress={() => void onExport("bibtex")}
+      >
+        Export .bib
+      </Button>
+    </div>
+  );
+}

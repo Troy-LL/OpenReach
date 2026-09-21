@@ -46,7 +46,10 @@ function asSort(key: string | number | null): SortKey {
   switch (key) {
     case "composite":
     case "relevance":
-    case "centrality":
+    case "method":
+    case "population":
+    case "evidence":
+    case "recency":
     case "review":
     case "year_desc":
     case "year_asc":
@@ -117,8 +120,20 @@ export function Filters({ filters, onChange, shown, total }: Props) {
               Relevance
               <ListBox.ItemIndicator />
             </ListBox.Item>
-            <ListBox.Item id="centrality" textValue="Centrality">
-              Centrality
+            <ListBox.Item id="method" textValue="Method match">
+              Method match
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
+            <ListBox.Item id="population" textValue="Population match">
+              Population match
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
+            <ListBox.Item id="evidence" textValue="Evidence">
+              Evidence
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
+            <ListBox.Item id="recency" textValue="Recency fit">
+              Recency fit
               <ListBox.ItemIndicator />
             </ListBox.Item>
             <ListBox.Item id="review" textValue="Most review-like">
@@ -188,15 +203,15 @@ export function Filters({ filters, onChange, shown, total }: Props) {
       <Slider
         maxValue={4}
         minValue={0}
-        step={0.5}
-        value={filters.minCentrality}
+        step={1}
+        value={filters.minEvidence}
         onChange={(value) =>
-          patch({ minCentrality: Array.isArray(value) ? value[0] : value })
+          patch({ minEvidence: Array.isArray(value) ? value[0] : value })
         }
       >
-        <Label>Min centrality</Label>
+        <Label>Min evidence</Label>
         <Slider.Output className="font-mono text-xs tabular-nums">
-          {filters.minCentrality.toFixed(1)}
+          {filters.minEvidence}
         </Slider.Output>
         <Slider.Track>
           <Slider.Fill />

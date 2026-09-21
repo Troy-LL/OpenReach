@@ -48,7 +48,6 @@ describe("specialtyIndexesFor", () => {
     expect(specialtyIndexesFor(field as Intent["field"]).sort()).toEqual(
       [...expected].sort(),
     );
-    // Always-on indexes are separate from specialty gating.
     expect(ALWAYS.length).toBeGreaterThanOrEqual(5);
   });
 });

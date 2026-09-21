@@ -16,16 +16,41 @@ function normalizeDoi(doi: string): string {
     .replace(/^10\.48550\/arxiv\./i, "arxiv:");
 }
 
-/** Prefer papers with abstracts; when equal, keep the earlier source order. */
+function dedupeKey(paper: Paper): string {
+  const doi = paper.doi?.trim();
+  if (doi) {
+    return `doi:${normalizeDoi(doi)}`;
+  }
+  return `title:${normalizeTitle(paper.title)}|year:${paper.year ?? ""}`;
+}
+
+function preferIncoming(existing: Paper, incoming: Paper): boolean {
+  const existingAbstract = existing.abstract.trim();
+  const incomingAbstract = incoming.abstract.trim();
+
+  if (!existingAbstract && incomingAbstract) return true;
+  if (existingAbstract && !incomingAbstract) return false;
+
+  const existingUrl = existing.url?.trim() ?? "";
+  const incomingUrl = incoming.url?.trim() ?? "";
+  if (!existingUrl && incomingUrl) return true;
+  if (existingUrl && !incomingUrl) return false;
+
+  const existingVenue = existing.venue?.trim() ?? "";
+  const incomingVenue = incoming.venue?.trim() ?? "";
+  if (!existingVenue && incomingVenue) return true;
+
+  return false;
+}
+
+/** Prefer richer abstract, then url, then venue; keep source order on ties. */
 export function dedupePapers(papers: Paper[], cap = 120): Paper[] {
   const byKey = new Map<string, Paper>();
 
   for (const paper of papers) {
     if (!paper.title.trim()) continue;
 
-    const key = paper.doi
-      ? `doi:${normalizeDoi(paper.doi)}`
-      : `title:${normalizeTitle(paper.title)}`;
+    const key = dedupeKey(paper);
 
     const existing = byKey.get(key);
     if (!existing) {
@@ -33,13 +58,7 @@ export function dedupePapers(papers: Paper[], cap = 120): Paper[] {
       continue;
     }
 
-    const preferNew =
-      (!existing.abstract && !!paper.abstract) ||
-      (existing.abstract === paper.abstract &&
-        !existing.url &&
-        !!paper.url);
-
-    if (preferNew) {
+    if (preferIncoming(existing, paper)) {
       byKey.set(key, paper);
     }
   }

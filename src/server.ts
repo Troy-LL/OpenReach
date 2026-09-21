@@ -5,8 +5,9 @@ import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createApp } from "./app.js";
 import { loadLocalKey } from "./keys.js";
+import { apiListenConfig } from "./listen.js";
 
-const port = Number(process.env.PORT ?? 3000);
+const { port, hostname } = apiListenConfig();
 const staticRoot = resolve(process.cwd(), "web/dist");
 const serveUi =
   process.env.API_ONLY !== "1" && existsSync(join(staticRoot, "index.html"));
@@ -17,8 +18,8 @@ const app = createApp({
   staticRoot: serveUi ? staticRoot : undefined,
 });
 
-const server = serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`OpenReach on http://127.0.0.1:${info.port}`);
+const server = serve({ fetch: app.fetch, port, hostname }, (info) => {
+  console.log(`OpenReach on http://${hostname}:${info.port}`);
   if (!serveUi) {
     console.log("API only — run `npm run dev` for the UI, or `npm run build` then restart.");
   }

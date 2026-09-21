@@ -1,11 +1,21 @@
 import { noul, score, TypeSafeClient } from "@typesafe-ai/sdk";
 import { cacheKey, TtlLruCache } from "./cache.js";
-import { compositeScore } from "./score.js";
-import type { Intent, Paper, RankedPaper } from "./types.js";
+import {
+  compositeScore,
+  EVIDENCE_LEGENDS,
+  METHOD_LEGENDS,
+  POPULATION_LEGENDS,
+  RECENCY_LEGENDS,
+  topicRelevance,
+} from "./score.js";
+import type { Intent, Paper, RankedPaper, ScoreContext } from "./types.js";
 
-const scoreCache = new TtlLruCache<
-  Pick<RankedPaper, "relevance" | "isReview" | "centrality">
->(2000, 60 * 60 * 1000);
+type CachedDims = Pick<
+  RankedPaper,
+  "method" | "population" | "evidence" | "recency" | "isReview"
+>;
+
+const scoreCache = new TtlLruCache<CachedDims>(2000, 60 * 60 * 1000);
 
 export function scoreCacheSize(): number {
   return scoreCache.size;
@@ -15,8 +25,20 @@ export function clearScoreCache(): void {
   scoreCache.clear();
 }
 
-function paperScoreKey(question: string, paper: Paper): string {
-  return cacheKey([question, paper.doi ?? paper.id]);
+function paperScoreKey(
+  question: string,
+  paper: Paper,
+  context?: ScoreContext,
+): string {
+  return cacheKey([
+    question,
+    paper.doi ?? paper.id,
+    context?.methodNeed ?? "",
+    context?.populationNeed ?? "",
+    context?.recencyNeed ?? "any",
+    context?.likeTitle ?? "",
+    context?.likeAbstract ?? "",
+  ]);
 }
 
 const CONCURRENCY = 8;
@@ -48,8 +70,9 @@ export async function scorePaper(
   client: TypeSafeClient,
   question: string,
   paper: Paper,
-): Promise<Pick<RankedPaper, "relevance" | "isReview" | "centrality">> {
-  const key = paperScoreKey(question, paper);
+  context?: ScoreContext,
+): Promise<CachedDims> {
+  const key = paperScoreKey(question, paper, context);
   const cached = scoreCache.get(key);
   if (cached) return cached;
 
@@ -60,19 +83,28 @@ export async function scorePaper(
       abstract: paper.abstract,
       year: paper.year,
       venue: paper.venue,
+      method_need: context?.methodNeed ?? null,
+      population_need: context?.populationNeed ?? null,
+      recency_need: context?.recencyNeed ?? "any",
+      like_title: context?.likeTitle ?? null,
+      like_abstract: context?.likeAbstract ?? null,
     },
     questions: {
-      relevance: noul(
-        {
-          task: "Does this paper address the user's research need?",
-          important:
-            "Wording may differ. Synonyms, field jargon, and paraphrases still count as yes when the paper studies the same problem, method, finding, or phenomenon the user asked about.",
-          user_need: question,
-        },
-        {
-          true: "Same problem, method, or finding — even if the paper uses different vocabulary than the user",
-          false: "Only a nearby field, shared buzzwords, or a different problem that happens to mention similar terms",
-        },
+      method: score(
+        "Does the paper's method or approach match what the user needs?",
+        [...METHOD_LEGENDS],
+      ),
+      population: score(
+        "Does the paper study the right domain, setting, cohort, species, or system for the user's need?",
+        [...POPULATION_LEGENDS],
+      ),
+      evidence: score(
+        "How strong and usable is the evidence in this paper for the user's need?",
+        [...EVIDENCE_LEGENDS],
+      ),
+      recency: score(
+        "How well does the paper's timing fit the user's time need (see recency_need in state)?",
+        [...RECENCY_LEGENDS],
       ),
       is_review: noul(
         "Is this paper primarily a survey, review, or systematic overview?",
@@ -81,26 +113,28 @@ export async function scorePaper(
           false: "Primary research paper presenting a new method, system, or study",
         },
       ),
-      centrality: score(
-        "How central is this paper to answering the user's need?",
-        [
-          "Tangential; only weakly connected after stretching the interpretation",
-          "Background or adjacent; useful context but not the main answer",
-          "Clearly on-topic; a reasonable paper to read for this need",
-          "Strong match; among the better papers for this need",
-          "Core match; directly targets what the user is looking for",
-        ],
-      ),
     },
   });
 
-  const judged = {
-    relevance: answers.relevance.noul,
+  const judged: CachedDims = {
+    method: answers.method.score,
+    population: answers.population.score,
+    evidence: answers.evidence.score,
+    recency: answers.recency.score,
     isReview: answers.is_review.noul,
-    centrality: answers.centrality.score,
   };
   scoreCache.set(key, judged);
   return judged;
+}
+
+function toRanked(
+  paper: Paper,
+  dims: CachedDims,
+  preferReviews: boolean,
+): RankedPaper {
+  const relevance = topicRelevance(dims.method, dims.population);
+  const composite = compositeScore(dims, preferReviews);
+  return { ...paper, ...dims, relevance, composite, scored: true };
 }
 
 export async function rerankPapers(
@@ -108,19 +142,12 @@ export async function rerankPapers(
   question: string,
   papers: Paper[],
   intent: Intent,
+  context?: ScoreContext,
 ): Promise<RankedPaper[]> {
   const preferReviews = intent.wantsReview >= 0.55;
 
-  const scored = await mapPool(papers, CONCURRENCY, async (paper) => {
-    const s = await scorePaper(client, question, paper);
-    const composite = compositeScore(
-      s.relevance,
-      s.isReview,
-      s.centrality,
-      preferReviews,
-    );
-    return { ...paper, ...s, scored: true, composite };
+  return mapPool(papers, CONCURRENCY, async (paper) => {
+    const dims = await scorePaper(client, question, paper, context);
+    return toRanked(paper, dims, preferReviews);
   });
-
-  return scored;
 }

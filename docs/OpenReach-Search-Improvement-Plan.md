@@ -2,6 +2,10 @@
 
 Plan for better ranking and relevance in OpenReach using **Jev** (TypeSafe System One) plus local code scaffolding. **No embedding model** and no vector database — judgment stays on System One; retrieval, filters, weights, batching, dedupe, and citation stay in code.
 
+## Status
+
+**All four priorities in section 9 are implemented in this checkout (2026-09-21):** staged retrieve with DOI-then-title dedupe behind a code BM25 gate, four Jev Score dimensions plus the `isReview` Noul combined by code weights, seeded "find more like this", and deterministic APA 7 / BibTeX export. Query splitting shipped as deterministic heuristics rather than a second Jev call. Two product risks are still open: ERIC and BM25 keyword matches can put a plausible-but-wrong paper high on the first page, and the CLI's 0.35 score threshold can hide rows that were never scored. This document remains the design record for why the pipeline is shaped this way — read the per-slice notes in section 9 for what each priority actually landed as.
+
 ## 1. Goal
 
 Make “papers that actually answer the question” rise above keyword near-misses, without turning OpenReach into a black-box LLM ranker or an embedding search product.
@@ -98,7 +102,7 @@ Scaffolding makes failures *local and tunable*. A wrong weight or a bad year fil
 
 | Area | Change |
 | --- | --- |
-| **New `query-split` module** | Optional light split of the user question into facets (problem / method / population / constraints) via Jev `choice`/`noul` *or* deterministic heuristics — feeds filters and scoring state. No embeddings. |
+| **New `query-split` module** | Second run, not priority 1. Light split of the user question into facets (problem / method / population / constraints) — feeds filters and scoring state. No embeddings. Shipped as deterministic heuristics, so a query costs no extra Jev call. |
 | **`search.ts` / `session.ts`** | Staged retrieval: large code-only candidate set; session holds unscored backlog; score-first page; “show more” scores next ID batch. |
 | **`rerank.ts`** | Multi-dimension System One questions (method, population, evidence, recency) + one-line justification per dimension; map into typed fields; leave composite to `score.ts` weights. |
 | **`dedupe.ts`** | Tighten keys: DOI canonicalization first; else normalized title **+ year**; prefer richer abstract/metadata when merging. |
@@ -110,9 +114,17 @@ UI pieces (filters, dimension meters, export selection, “more like this”) fo
 ## 9. Priority by impact
 
 1. **Staged full-set scoring** — Large code recall + page/on-demand Jev. Biggest cost/latency win; unlocks breadth without burning keys.
+
+   **This slice (locked 2026-09-21):** After retrieve, DOI-then-title+year dedupe, and a code BM25 gate, the session may hold 200–500 unscored papers. Jev still scores only the visible page (8). `pending` / `sessionId` still track the rest. Query-split, structured dimensions, more-like-this, and APA are out of this slice.
 2. **Structured scoring** — Method / population / evidence / recency + weights + justifications. Biggest relevance/debuggability win on the papers users already see.
+
+   **This slice (locked 2026-09-21):** One System One call per paper asks method / population / evidence / recency Scores (5-level rubrics; legend is the justification) plus keep `isReview` Noul. Code derives `relevance` from method+population and `composite` from weights in `score.ts`. Jev does not generate prose. Query-split heuristics feed scoring context and year windows; `review only` raises `wantsReview`. More-like-this and APA shipped in the same run.
 3. **On-demand breadth + find-more-like-this** — “Show more” polish and seeded re-retrieve. Deepens exploration once (1)–(2) are solid.
+
+   **This slice (locked 2026-09-21):** Page scoring already exists. Add seeded “more like this”: code extracts terms from the liked paper, re-retrieves + BM25-gates, Jev-scores the first page with that paper as `ScoreContext.likeTitle` / `likeAbstract`.
 4. **APA export** — High user value, low ranking risk; ship when metadata fields are good enough; deterministic only.
+
+   **This slice (locked 2026-09-21):** Deterministic APA 7 + BibTeX from title/year/venue/DOI/URL (and authors only if present). No Jev. Missing authors → explicit `[Author unknown]`. Never invent volume/pages.
 
 ---
 

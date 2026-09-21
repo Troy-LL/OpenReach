@@ -59,7 +59,6 @@ export function createKeyStore(filePath: string): KeyStore {
       try {
         await unlink(filePath);
       } catch {
-        // already gone
       }
       if (appliedEnv) {
         delete process.env.TYPESAFE_API_KEY;

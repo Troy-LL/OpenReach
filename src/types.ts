@@ -31,12 +31,26 @@ export interface Intent {
   wantsEmpirical: number;
 }
 
+export type RecencyNeed = "any" | "recent" | "historical";
+
+export interface ScoreContext {
+  methodNeed?: string | null;
+  populationNeed?: string | null;
+  recencyNeed?: RecencyNeed;
+  likeTitle?: string;
+  likeAbstract?: string;
+}
+
 export interface RankedPaper extends Paper {
   /** False until this row has been Jev-scored for the current question. */
   scored: boolean;
-  relevance: number;
+  method: number;
+  population: number;
+  evidence: number;
+  recency: number;
   isReview: number;
-  centrality: number;
+  /** Derived from method + population; not a Jev field. */
+  relevance: number;
   composite: number;
 }
 

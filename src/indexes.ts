@@ -338,7 +338,6 @@ function preprintSource(hit: PreprintHit): PaperSource | null {
   const doi = (hit.doi ?? "").toLowerCase();
   if (journal.includes("medrxiv")) return "medrxiv";
   if (journal.includes("biorxiv")) return "biorxiv";
-  // medRxiv DOIs commonly look like 10.1101/YYYY.MM.DD.NNNNNNNN (8 trailing digits)
   if (/10\.1101\/\d{4}\.\d{2}\.\d{2}\.\d{8}/.test(doi)) return "medrxiv";
   if (doi.startsWith("10.1101/")) return "biorxiv";
   return null;
@@ -506,7 +505,6 @@ export async function searchLifeSciencePreprints(
   const parsed = parsePreprintHits(data?.resultList?.result ?? []);
   if (parsed.length > 0) return parsed;
 
-  // Fallback: Europe PMC preprint corpus (SRC:PPR), keep only bio/medRxiv DOIs.
   const fallbackUrl =
     `${EUROPE_PMC}?query=${encodeURIComponent(`SRC:PPR AND ${q}`)}` +
     `&format=json&pageSize=${pageSize}&resultType=core`;

@@ -3,6 +3,7 @@ import "dotenv/config";
 import { describe, expect, it } from "vitest";
 import { createClient } from "../src/intent.js";
 import { scorePaper } from "../src/rerank.js";
+import { topicRelevance } from "../src/score.js";
 import type { Paper } from "../src/types.js";
 
 const hasKey = Boolean(process.env.TYPESAFE_API_KEY?.trim());
@@ -69,17 +70,13 @@ const fixtures = [
 ] as const;
 
 describe.skipIf(!hasKey)("Jev relevance fixtures", () => {
-  const client = createClient();
-
   for (const fix of fixtures) {
     it(
       fix.name,
       async () => {
-        const { relevance } = await scorePaper(
-          client,
-          fix.question,
-          fix.paper,
-        );
+        const client = createClient();
+        const scored = await scorePaper(client, fix.question, fix.paper);
+        const relevance = topicRelevance(scored.method, scored.population);
         if (fix.expect === "high") {
           expect(relevance).toBeGreaterThanOrEqual(0.55);
         } else {

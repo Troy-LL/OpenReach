@@ -20,9 +20,12 @@ export const PAPER_SOURCES: PaperSource[] = [
 export type SortKey =
   | "composite"
   | "relevance"
+  | "method"
+  | "population"
+  | "evidence"
+  | "recency"
   | "year_desc"
   | "year_asc"
-  | "centrality"
   | "review";
 
 export type PaperKind = "all" | "reviews" | "primary";
@@ -30,7 +33,7 @@ export type PaperKind = "all" | "reviews" | "primary";
 export interface ResultFilters {
   sort: SortKey;
   minRelevance: number;
-  minCentrality: number;
+  minEvidence: number;
   yearFrom: number | null;
   yearTo: number | null;
   includeUnknownYear: boolean;
@@ -45,7 +48,7 @@ export interface ResultFilters {
 export const DEFAULT_FILTERS: ResultFilters = {
   sort: "composite",
   minRelevance: 0.35,
-  minCentrality: 0,
+  minEvidence: 0,
   yearFrom: null,
   yearTo: null,
   includeUnknownYear: true,
@@ -84,14 +87,28 @@ function kindOk(paper: RankedPaper, kind: PaperKind): boolean {
   }
 }
 
+function isScoreSort(sort: SortKey): boolean {
+  switch (sort) {
+    case "composite":
+    case "relevance":
+    case "method":
+    case "population":
+    case "evidence":
+    case "recency":
+    case "review":
+      return true;
+    case "year_desc":
+    case "year_asc":
+      return false;
+    default: {
+      const _never: never = sort;
+      return _never;
+    }
+  }
+}
+
 function scoreValue(paper: RankedPaper, sort: SortKey): number {
-  if (
-    !paper.scored &&
-    (sort === "composite" ||
-      sort === "relevance" ||
-      sort === "centrality" ||
-      sort === "review")
-  ) {
+  if (!paper.scored && isScoreSort(sort)) {
     return Number.NEGATIVE_INFINITY;
   }
   switch (sort) {
@@ -99,8 +116,14 @@ function scoreValue(paper: RankedPaper, sort: SortKey): number {
       return paper.composite;
     case "relevance":
       return paper.relevance;
-    case "centrality":
-      return paper.centrality;
+    case "method":
+      return paper.method;
+    case "population":
+      return paper.population;
+    case "evidence":
+      return paper.evidence;
+    case "recency":
+      return paper.recency;
     case "review":
       return paper.isReview;
     case "year_desc":
@@ -131,7 +154,7 @@ export function applyFilters(
     .filter((paper) => {
       if (paper.scored) {
         if (paper.relevance < filters.minRelevance) return false;
-        if (paper.centrality < filters.minCentrality) return false;
+        if (paper.evidence < filters.minEvidence) return false;
       }
       if (!yearOk(paper, filters)) return false;
       if (sources && sources.length > 0 && !sources.includes(paper.source)) {

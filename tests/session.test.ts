@@ -24,13 +24,17 @@ function paper(id: string): Paper {
 const fakeScore = async (
   _question: string,
   papers: Paper[],
+  _context = {},
 ): Promise<RankedPaper[]> =>
   papers.map((p, i) => ({
     ...p,
     scored: true,
+    method: 3,
+    population: 3,
+    evidence: 3,
+    recency: 2,
     relevance: 0.9 - i * 0.1,
     isReview: 0.1,
-    centrality: 3,
     composite: 0.8 - i * 0.1,
   }));
 

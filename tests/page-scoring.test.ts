@@ -13,9 +13,12 @@ function paper(id: string, scored: boolean): RankedPaper {
     url: null,
     source: "openalex",
     scored,
-    relevance: 0,
+    method: 0,
+    population: 0,
+    evidence: 0,
+    recency: 0,
     isReview: 0,
-    centrality: 0,
+    relevance: 0,
     composite: 0,
   };
 }

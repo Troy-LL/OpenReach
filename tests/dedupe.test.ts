@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { dedupePapers } from "../src/dedupe.js";
-import { compositeScore, filterAndSort } from "../src/score.js";
-import type { Paper, RankedPaper } from "../src/types.js";
+import type { Paper } from "../src/types.js";
 
 function paper(partial: Partial<Paper> & Pick<Paper, "id" | "title">): Paper {
   return {
@@ -53,6 +52,82 @@ describe("dedupePapers", () => {
     expect(dedupePapers([a, b])).toHaveLength(1);
   });
 
+  it("keeps same title in different years as separate papers", () => {
+    const a = paper({
+      id: "1",
+      title: "Annual Survey of Machine Learning",
+      year: 2019,
+      abstract: "Survey for 2019.",
+    });
+    const b = paper({
+      id: "2",
+      title: "Annual Survey of Machine Learning",
+      year: 2020,
+      abstract: "Survey for 2020.",
+    });
+
+    expect(dedupePapers([a, b])).toHaveLength(2);
+  });
+
+  it("merges same normalized title when both years are missing", () => {
+    const a = paper({
+      id: "1",
+      title: "Untitled Year Collision",
+      year: null,
+      abstract: "First abstract.",
+    });
+    const b = paper({
+      id: "2",
+      title: "Untitled Year Collision",
+      year: null,
+      abstract: "Second abstract.",
+      source: "semantic_scholar",
+    });
+
+    const out = dedupePapers([a, b]);
+    expect(out).toHaveLength(1);
+    expect(out[0].abstract).toBe("First abstract.");
+  });
+
+  it("prefers url then venue when abstracts match", () => {
+    const shared = {
+      title: "Shared Metadata Paper",
+      abstract: "Same abstract.",
+      year: 2021,
+    };
+    const noUrl = paper({
+      id: "1",
+      ...shared,
+      url: null,
+      venue: null,
+    });
+    const withUrl = paper({
+      id: "2",
+      ...shared,
+      url: "https://example.org/paper",
+      venue: null,
+      source: "semantic_scholar",
+    });
+    expect(dedupePapers([noUrl, withUrl])[0].url).toBe(
+      "https://example.org/paper",
+    );
+
+    const noVenue = paper({
+      id: "3",
+      ...shared,
+      url: "https://example.org/a",
+      venue: null,
+    });
+    const withVenue = paper({
+      id: "4",
+      ...shared,
+      url: "https://example.org/a",
+      venue: "NeurIPS",
+      source: "semantic_scholar",
+    });
+    expect(dedupePapers([noVenue, withVenue])[0].venue).toBe("NeurIPS");
+  });
+
   it("drops papers without abstracts and respects the cap", () => {
     const papers = Array.from({ length: 5 }, (_, i) =>
       paper({
@@ -66,45 +141,5 @@ describe("dedupePapers", () => {
     const out = dedupePapers(papers, 2);
     expect(out).toHaveLength(2);
     expect(out.every((p) => p.abstract.length > 0)).toBe(true);
-  });
-});
-
-describe("compositeScore / filterAndSort", () => {
-  it("weights relevance highest and can boost reviews", () => {
-    const base = compositeScore(0.8, 0, 2, false);
-    const withReview = compositeScore(0.8, 1, 2, true);
-    expect(withReview).toBeGreaterThan(base);
-  });
-
-  it("filters below threshold and sorts by composite", () => {
-    const ranked: RankedPaper[] = [
-      {
-        ...paper({ id: "low", title: "Low", abstract: "a" }),
-        scored: true,
-        relevance: 0.2,
-        isReview: 0,
-        centrality: 4,
-        composite: 0.9,
-      },
-      {
-        ...paper({ id: "mid", title: "Mid", abstract: "a" }),
-        scored: true,
-        relevance: 0.5,
-        isReview: 0,
-        centrality: 1,
-        composite: 0.4,
-      },
-      {
-        ...paper({ id: "hi", title: "Hi", abstract: "a" }),
-        scored: true,
-        relevance: 0.9,
-        isReview: 0,
-        centrality: 3,
-        composite: 0.8,
-      },
-    ];
-
-    const out = filterAndSort(ranked);
-    expect(out.map((p) => p.id)).toEqual(["hi", "mid"]);
   });
 });

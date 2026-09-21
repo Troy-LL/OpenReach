@@ -1,4 +1,16 @@
-import type { RankedPaper, SearchResult } from "@shared/types";
+import type { Paper, RankedPaper, SearchResult } from "@shared/types";
+
+export type ExportFormat = "apa" | "bibtex";
+
+export type CiteablePaper = Pick<
+  RankedPaper,
+  "id" | "title" | "year" | "venue" | "doi" | "url"
+> & {
+  authors?: string[] | null;
+  volume?: string | null;
+  issue?: string | null;
+  pages?: string | null;
+};
 
 async function readJson<T>(res: Response): Promise<T> {
   const body = (await res.json()) as T & { error?: string };
@@ -55,6 +67,27 @@ export async function scoreVisible(
 
 export async function clearServerCache(): Promise<void> {
   await fetch("/api/cache/clear", { method: "POST" });
+}
+
+export async function exportCitations(
+  format: ExportFormat,
+  papers: CiteablePaper[],
+): Promise<{ format: ExportFormat; text: string }> {
+  const res = await fetch("/api/export", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ format, papers }),
+  });
+  return readJson(res);
+}
+
+export async function moreLikePaper(paper: Paper): Promise<SearchResult> {
+  const res = await fetch("/api/more-like", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ paper }),
+  });
+  return readJson<SearchResult>(res);
 }
 
 export interface Suggestion {

@@ -1,7 +1,7 @@
 import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
   clearLocalKey,
   createKeyStore,
@@ -12,6 +12,10 @@ import {
 
 describe("local TypeSafe key store", () => {
   const dirs: string[] = [];
+
+  beforeEach(() => {
+    delete process.env.TYPESAFE_API_KEY;
+  });
 
   afterEach(async () => {
     clearLocalKey();
@@ -52,6 +56,10 @@ describe("local TypeSafe key store", () => {
 });
 
 describe("default key store helpers", () => {
+  beforeEach(() => {
+    delete process.env.TYPESAFE_API_KEY;
+  });
+
   afterEach(() => {
     clearLocalKey();
     delete process.env.TYPESAFE_API_KEY;

@@ -13,9 +13,12 @@ function paper(
     url: "https://example.com/p",
     source: "openalex",
     scored: true,
+    method: 3,
+    population: 3,
+    evidence: 3,
+    recency: 2,
     relevance: 0.8,
     isReview: 0.1,
-    centrality: 3,
     composite: 0.7,
     ...partial,
   };
@@ -30,7 +33,7 @@ const set: RankedPaper[] = [
     source: "arxiv",
     relevance: 0.98,
     isReview: 0.05,
-    centrality: 4,
+    evidence: 4,
     composite: 0.9,
   }),
   paper({
@@ -41,7 +44,7 @@ const set: RankedPaper[] = [
     source: "openalex",
     relevance: 0.9,
     isReview: 0.96,
-    centrality: 3.5,
+    evidence: 3,
     composite: 0.85,
     doi: null,
   }),
@@ -53,7 +56,7 @@ const set: RankedPaper[] = [
     source: "semantic_scholar",
     relevance: 0.4,
     isReview: 0.2,
-    centrality: 1,
+    evidence: 1,
     composite: 0.35,
     url: null,
   }),
@@ -65,7 +68,7 @@ const set: RankedPaper[] = [
     source: "related",
     relevance: 0.55,
     isReview: 0.1,
-    centrality: 2,
+    evidence: 2,
     composite: 0.45,
   }),
 ];
@@ -81,11 +84,11 @@ describe("applyFilters", () => {
     ]);
   });
 
-  it("drops below minRelevance and minCentrality", () => {
+  it("drops below minRelevance and minEvidence", () => {
     const out = applyFilters(set, {
       ...DEFAULT_FILTERS,
       minRelevance: 0.7,
-      minCentrality: 3.6,
+      minEvidence: 4,
     });
     expect(out.map((p) => p.id)).toEqual(["resnet"]);
   });
@@ -158,7 +161,7 @@ describe("applyFilters", () => {
       title: "Not judged yet",
       scored: false,
       relevance: 0,
-      centrality: 0,
+      evidence: 0,
       composite: 0,
     });
     const out = applyFilters([...set, waiting], DEFAULT_FILTERS);

@@ -1,5 +1,12 @@
 import { Chip } from "@heroui/react";
 import type { PaperSource, RankedPaper } from "@shared/types";
+import {
+  EVIDENCE_LEGENDS,
+  legendFor,
+  METHOD_LEGENDS,
+  POPULATION_LEGENDS,
+  RECENCY_LEGENDS,
+} from "@shared/score";
 import { ScoreMeter } from "./ScoreMeter";
 import { ScoreSkeleton } from "./Skeletons";
 
@@ -74,15 +81,45 @@ export function PaperCard({
           {paper.abstract}
         </p>
         {paper.scored ? (
-          <div aria-label="Jev scores" className="flex flex-col gap-2">
-            <ScoreMeter display={pct(paper.relevance)} label="Relevance" value={paper.relevance} />
+          <div aria-label="Jev scores" className="flex flex-col gap-3">
             <ScoreMeter
-              display={paper.centrality.toFixed(1)}
-              label="Centrality"
-              max={4}
-              value={paper.centrality}
+              display={pct(paper.relevance)}
+              label="Relevance"
+              value={paper.relevance}
             />
-            <ScoreMeter display={pct(paper.isReview)} label="Review-like" value={paper.isReview} />
+            <ScoreMeter
+              display={paper.method.toFixed(0)}
+              justification={legendFor(METHOD_LEGENDS, paper.method)}
+              label="Method"
+              max={4}
+              value={paper.method}
+            />
+            <ScoreMeter
+              display={paper.population.toFixed(0)}
+              justification={legendFor(POPULATION_LEGENDS, paper.population)}
+              label="Population"
+              max={4}
+              value={paper.population}
+            />
+            <ScoreMeter
+              display={paper.evidence.toFixed(0)}
+              justification={legendFor(EVIDENCE_LEGENDS, paper.evidence)}
+              label="Evidence"
+              max={4}
+              value={paper.evidence}
+            />
+            <ScoreMeter
+              display={paper.recency.toFixed(0)}
+              justification={legendFor(RECENCY_LEGENDS, paper.recency)}
+              label="Recency"
+              max={4}
+              value={paper.recency}
+            />
+            <ScoreMeter
+              display={pct(paper.isReview)}
+              label="Review-like"
+              value={paper.isReview}
+            />
           </div>
         ) : (
           <ScoreSkeleton />

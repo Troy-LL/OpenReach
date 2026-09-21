@@ -4,6 +4,25 @@ import { DEMO_RESULT } from "../src/demo-data.js";
 import type { SearchResult } from "../src/types.js";
 
 describe("HTTP API", () => {
+  it("lists API routes at GET /api", async () => {
+    const app = createApp();
+    const res = await app.request("/api");
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.name).toBe("openreach");
+    expect(typeof body.version).toBe("string");
+    expect(Array.isArray(body.endpoints)).toBe(true);
+    const paths = body.endpoints.map(
+      (e: { path: string }) => e.path,
+    );
+    expect(paths).toContain("/api/health");
+    expect(paths).toContain("/api/search");
+    expect(paths).toContain("/api/demo");
+    expect(body.endpoints.some((e: { purpose: string }) => /mcp/i.test(e.purpose))).toBe(
+      true,
+    );
+  });
+
   it("reports health", async () => {
     const app = createApp();
     const res = await app.request("/api/health");
@@ -116,5 +135,155 @@ describe("HTTP API", () => {
     const res = await app.request("/api/suggest?q=a");
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ suggestions: [] });
+  });
+
+  it("exports APA citations without a TypeSafe key", async () => {
+    delete process.env.TYPESAFE_API_KEY;
+    const paper = DEMO_RESULT.papers[0];
+    const app = createApp();
+    const res = await app.request("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        format: "apa",
+        papers: [
+          {
+            id: paper.id,
+            title: paper.title,
+            year: paper.year,
+            venue: paper.venue,
+            doi: paper.doi,
+            url: paper.url,
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.format).toBe("apa");
+    expect(body.text).toContain(paper.title);
+    expect(body.text).toContain("https://doi.org/");
+  });
+
+  it("exports BibTeX citations", async () => {
+    const paper = DEMO_RESULT.papers[0];
+    const app = createApp();
+    const res = await app.request("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        format: "bibtex",
+        papers: [
+          {
+            id: paper.id,
+            title: paper.title,
+            year: paper.year,
+            venue: paper.venue,
+            doi: paper.doi,
+            url: paper.url,
+          },
+        ],
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.format).toBe("bibtex");
+    expect(body.text).toMatch(/^@\w+\{/);
+    expect(body.text).toContain(paper.title);
+  });
+
+  it("rejects invalid export format", async () => {
+    const app = createApp();
+    const res = await app.request("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ format: "ris", papers: DEMO_RESULT.papers }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects empty export papers", async () => {
+    const app = createApp();
+    const res = await app.request("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ format: "apa", papers: [] }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects non-array export papers", async () => {
+    const app = createApp();
+    const res = await app.request("/api/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ format: "apa", papers: "nope" }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects more-like without a title", async () => {
+    const app = createApp({
+      moreLike: async () => DEMO_RESULT,
+    });
+    const res = await app.request("/api/more-like", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ paper: { id: "x", title: "   " } }),
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("blocks more-like until a TypeSafe key exists", async () => {
+    delete process.env.TYPESAFE_API_KEY;
+    const app = createApp();
+    const paper = DEMO_RESULT.papers[0];
+    const res = await app.request("/api/more-like", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paper: {
+          id: paper.id,
+          title: paper.title,
+          abstract: paper.abstract,
+          year: paper.year,
+          venue: paper.venue,
+          doi: paper.doi,
+          url: paper.url,
+          source: paper.source,
+        },
+      }),
+    });
+    expect(res.status).toBe(503);
+  });
+
+  it("runs injected more-like search", async () => {
+    const seed = DEMO_RESULT.papers[0];
+    const app = createApp({
+      moreLike: async (paper) => ({
+        ...DEMO_RESULT,
+        question: `More like: ${paper.title}`,
+      }),
+    });
+    const res = await app.request("/api/more-like", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        paper: {
+          id: seed.id,
+          title: seed.title,
+          abstract: seed.abstract,
+          year: seed.year,
+          venue: seed.venue,
+          doi: seed.doi,
+          url: seed.url,
+          source: seed.source,
+        },
+      }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as SearchResult;
+    expect(body.question).toContain("More like:");
+    expect(body.papers.length).toBeGreaterThan(0);
   });
 });

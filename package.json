@@ -5,11 +5,12 @@
   "type": "module",
   "scripts": {
     "find": "tsx src/cli.ts",
+    "mcp": "node --import tsx src/mcp.ts",
     "dev": "concurrently -k -n api,web -c cyan,magenta \"npm:dev:api\" \"npm:dev:web\"",
-    "dev:api": "tsx watch src/server.ts",
-    "dev:web": "vite",
+    "dev:api": "node --import tsx --watch-path=src src/server.ts",
+    "dev:web": "vite --host 127.0.0.1",
     "build": "vite build",
-    "start": "tsx src/server.ts",
+    "start": "node --import tsx src/server.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit && tsc --noEmit -p web/tsconfig.json"
   },
@@ -20,9 +21,11 @@
     "@heroui/react": "^3.2.6",
     "@heroui/styles": "^3.2.6",
     "@hono/node-server": "^1.19.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "@typesafe-ai/sdk": "^0.6.0",
     "dotenv": "^16.4.7",
-    "hono": "^4.9.8"
+    "hono": "^4.9.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",

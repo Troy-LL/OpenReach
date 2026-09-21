@@ -1,9 +1,14 @@
 import { TtlLruCache } from "./cache.js";
-import { dedupePapers } from "./dedupe.js";
-import { createClient } from "./intent.js";
+import { classifyIntent, createClient } from "./intent.js";
 import { hasApiKey } from "./keys.js";
+import { splitQuery, type QueryFacets } from "./query-split.js";
 import { rerankPapers } from "./rerank.js";
 import { retrieveCandidates } from "./retrieve.js";
+import {
+  FindOptions,
+  RETRIEVE_LIMITS,
+  gateRetrieved,
+} from "./gate.js";
 import {
   createSearchSession,
   getSession,
@@ -11,17 +16,15 @@ import {
   scoreSessionIds,
   sessionPapers,
   sessionPending,
+  DEFAULT_INTENT,
 } from "./session.js";
-import type { Intent, Paper, RankedPaper, SearchResult } from "./types.js";
+import type { Intent, Paper, RankedPaper, ScoreContext, SearchResult } from "./types.js";
 
 export type { SearchResult } from "./types.js";
+export type { FindOptions };
+export { RETRIEVE_LIMITS, gateRetrieved };
 
 const retrieveCache = new TtlLruCache<Paper[]>(80, 10 * 60 * 1000);
-const NEUTRAL_INTENT: Intent = {
-  field: "other",
-  wantsReview: 0,
-  wantsEmpirical: 0,
-};
 
 export function retrieveCacheSize(): number {
   return retrieveCache.size;
@@ -31,9 +34,22 @@ export function clearRetrieveCache(): void {
   retrieveCache.clear();
 }
 
-export interface FindOptions {
-  /** How many papers to Jev-score immediately. UI uses 0; CLI uses a small page. */
-  scoreFirst?: number;
+function scoreContextFromFacets(facets: QueryFacets): ScoreContext {
+  return {
+    methodNeed: facets.method,
+    populationNeed: facets.population,
+    recencyNeed: facets.recency,
+  };
+}
+
+function applyConstraints(intent: Intent, facets: QueryFacets): Intent {
+  if (facets.constraints !== "review only") {
+    return intent;
+  }
+  return {
+    ...intent,
+    wantsReview: Math.max(intent.wantsReview, 0.55),
+  };
 }
 
 function resultFromSession(sessionId: string): SearchResult {
@@ -52,37 +68,32 @@ function resultFromSession(sessionId: string): SearchResult {
   const pending = sessionPending(session);
   return {
     question: session.question,
-    intent: null,
+    intent: session.intent,
     topics: [],
     papers,
-    sessionId: pending > 0 ? sessionId : sessionId,
+    sessionId,
     pending,
   };
 }
 
 async function retrieve(question: string): Promise<Paper[]> {
+  const facets = splitQuery(question);
   const key = retrieveCacheKey(question);
   const cached = retrieveCache.get(key);
   if (cached) return cached;
 
-  const raw = await retrieveCandidates(question, {
-    keywordLimit: 40,
-    arxivLimit: 40,
-    europePmcLimit: 40,
-    crossrefLimit: 40,
-    pubmedLimit: 40,
-    inspireLimit: 30,
-    ericLimit: 30,
-    doajLimit: 30,
-    openaireLimit: 30,
-    preprintLimit: 30,
-    plosLimit: 30,
-    relatedLimit: 25,
-    topicPaperLimit: 12,
-  });
-  const papers = dedupePapers(raw, 180);
+  const raw = await retrieveCandidates(question, RETRIEVE_LIMITS);
+  const papers = gateRetrieved(question, raw, facets);
   retrieveCache.set(key, papers);
   return papers;
+}
+
+async function resolveIntent(question: string, facets: QueryFacets): Promise<Intent> {
+  if (!hasApiKey()) {
+    return applyConstraints(DEFAULT_INTENT, facets);
+  }
+  const classified = await classifyIntent(createClient(), question);
+  return applyConstraints(classified, facets);
 }
 
 export async function findPapers(
@@ -94,8 +105,13 @@ export async function findPapers(
     throw new Error("Question is required.");
   }
 
-  const papers = await retrieve(trimmed);
-  const sessionId = createSearchSession(trimmed, papers);
+  const facets = splitQuery(trimmed);
+  const context = scoreContextFromFacets(facets);
+  const [papers, intent] = await Promise.all([
+    retrieve(trimmed),
+    resolveIntent(trimmed, facets),
+  ]);
+  const sessionId = createSearchSession(trimmed, papers, context, intent);
   const scoreFirst = options.scoreFirst ?? 0;
 
   if (scoreFirst > 0 && papers.length > 0) {
@@ -108,7 +124,7 @@ export async function findPapers(
     await scoreSessionIds(
       sessionId,
       papers.slice(0, scoreFirst).map((p) => p.id),
-      (q, batch) => rerankPapers(client, q, batch, NEUTRAL_INTENT),
+      (q, batch, ctx) => rerankPapers(client, q, batch, intent, ctx),
     );
   }
 
@@ -122,14 +138,18 @@ export async function scoreVisiblePapers(
   if (!hasApiKey()) {
     throw new Error("Add a TypeSafe key first. It stays on this machine.");
   }
-  const client = createClient();
-  const scored = await scoreSessionIds(sessionId, ids, (q, batch) =>
-    rerankPapers(client, q, batch, NEUTRAL_INTENT),
-  );
   const session = getSession(sessionId);
+  const intent = session?.intent ?? DEFAULT_INTENT;
+  const client = createClient();
+  const scored = await scoreSessionIds(sessionId, ids, (q, batch, ctx) =>
+    rerankPapers(client, q, batch, intent, ctx),
+  );
+  const next = getSession(sessionId);
   return {
     papers: scored,
-    pending: session ? sessionPending(session) : 0,
+    pending: next ? sessionPending(next) : 0,
     sessionId,
   };
 }
+
+export { findMoreLikeThis, seedQueryFromPaper } from "./more-like.js";
