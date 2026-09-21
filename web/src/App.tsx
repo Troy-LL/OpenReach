@@ -12,6 +12,7 @@ import {
   scoreVisible,
   searchPapers,
 } from "./api";
+import { hasClientKey } from "./client-key";
 import { ExportBar } from "./ExportBar";
 import { Filters } from "./Filters";
 import { KeyGate } from "./KeyGate";
@@ -67,6 +68,10 @@ export function App() {
   const sampleMode = Boolean(result && !result.sessionId && !busy);
 
   useEffect(() => {
+    if (hasClientKey()) {
+      setHasKey(true);
+      return;
+    }
     void getHealth()
       .then((health) => setHasKey(health.hasKey))
       .catch(() => setHasKey(false));

@@ -14,7 +14,7 @@ API: http://127.0.0.1:3000
 
 Both processes bind IPv4 `127.0.0.1` so that Vite's `/api` proxy can reach the API. The API reloads on source changes through Node's own watcher: the `dev:api` script runs `node --import tsx --watch-path=src src/server.ts`.
 
-The first screen asks for a TypeSafe / Jev key and saves it to `data/typesafe.key` on this machine. That file is gitignored and is never copied into the Docker image. If you set `TYPESAFE_API_KEY` in your environment, it takes precedence over the saved file. Never commit a key.
+The first screen asks for a TypeSafe / Jev key. The UI keeps it in this browser (`localStorage`). We do not store visitor keys on Cloudflare (no KV, Durable Object, or R2 for keys). Local `npm run dev` and Docker can also write `data/typesafe.key` on this machine for the CLI. If you set `TYPESAFE_API_KEY` in a local environment, it takes precedence there. Never commit a key.
 
 Two things work without a live Jev call: **Browse sample results**, which exercises the filters against fixed sample papers, and the search box itself, which shows OpenAlex autocomplete suggestions for papers, topics, and concepts as you type. Arrow keys move through suggestions, Enter selects, and Escape closes the list.
 
@@ -62,10 +62,10 @@ Under either `npm run dev` or `npm start`, the API listens on port 3000, which y
 | POST | `/api/export` | JSON `{ "format": "apa" \| "bibtex", "papers" }` |
 | POST | `/api/more-like` | JSON `{ "paper": { ... } }` |
 | GET | `/api/suggest?q=` | Autocomplete suggestions |
-| POST | `/api/key` | Save TypeSafe key to `data/typesafe.key` |
-| DELETE | `/api/key` | Remove local key |
+| POST | `/api/key` | Validate a TypeSafe key (Node also writes `data/typesafe.key`; Workers do not store it) |
+| DELETE | `/api/key` | Remove a Node-local key file |
 
-Live search and scoring need a key, so either set `TYPESAFE_API_KEY` in the environment or save one through `POST /api/key` or the UI. `data/typesafe.key` is gitignored, and keys should never be committed.
+Live search and scoring need a key. The hosted UI sends it on Jev calls via the `X-Typesafe-Key` header from `localStorage`. Locally you can also set `TYPESAFE_API_KEY` or save through `POST /api/key` / the UI to `data/typesafe.key` (gitignored). Keys should never be committed.
 
 ## MCP
 
@@ -104,6 +104,38 @@ docker run --rm -p 3000:3000 --env-file .env openreach
 ```
 
 Pass `TYPESAFE_API_KEY` in through the host environment or the env file at run time. Do not bake `.env` into the image.
+
+## Deploy to Cloudflare
+
+Production is the Worker named `openreach` on Troy's personal Cloudflare account. The live URL is **https://openreach.niched.tech** (zone `niched.tech`, same pattern as `pupsync` and `may-pasok-ba`). `wrangler.jsonc` binds that hostname as a Workers custom domain and still keeps the `*.workers.dev` fallback.
+
+Build the UI, then deploy from an account that owns zone `niched.tech`:
+
+```bash
+npx wrangler login
+npm run deploy
+```
+
+That runs `vite build` and `wrangler deploy`. If the zone is already on this Cloudflare account, deploy creates the DNS record for `openreach.niched.tech` automatically.
+
+If deploy says the zone is missing or the custom domain cannot be attached, finish it in the dashboard (personal account, not ASES):
+
+1. Workers & Pages → **openreach** → Settings → Domains & Routes → Add → Custom Domain
+2. Hostname: `openreach.niched.tech`
+3. Cloudflare issues the certificate and a proxied record on `niched.tech`.
+
+No secret is required for TypeSafe / Jev. Visitors paste their own key; it stays in the browser and is sent only on live Jev requests. OpenReach does not persist it in Durable Objects, KV, or R2. The Durable Object binding is for short-lived search sessions (retrieved papers waiting to be scored), not keys.
+
+Optional:
+
+```bash
+npx wrangler secret put SEMANTIC_SCHOLAR_API_KEY
+npx wrangler secret put OPENALEX_MAILTO
+```
+
+Do not set `TYPESAFE_API_KEY` as a Worker secret. The onboarding screen is the source of the key, on this device.
+
+Local `npm run dev` and Docker still use the Node server and may write `data/typesafe.key` for single-machine use.
 
 ## License
 

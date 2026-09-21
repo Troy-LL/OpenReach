@@ -1,4 +1,10 @@
 import type { Paper, RankedPaper, SearchResult } from "@shared/types";
+import { assertLooksLikeKey, TYPESAFE_KEY_HEADER } from "@shared/key-format";
+import {
+  clearClientKey,
+  loadClientKey,
+  saveClientKey,
+} from "./client-key";
 
 export type ExportFormat = "apa" | "bibtex";
 
@@ -11,6 +17,13 @@ export type CiteablePaper = Pick<
   pages?: string | null;
 };
 
+function apiHeaders(extra?: HeadersInit): Headers {
+  const headers = new Headers(extra);
+  const key = loadClientKey();
+  if (key) headers.set(TYPESAFE_KEY_HEADER, key);
+  return headers;
+}
+
 async function readJson<T>(res: Response): Promise<T> {
   const body = (await res.json()) as T & { error?: string };
   if (!res.ok) {
@@ -20,28 +33,31 @@ async function readJson<T>(res: Response): Promise<T> {
 }
 
 export async function getHealth(): Promise<{ ok: boolean; hasKey: boolean }> {
-  const res = await fetch("/api/health");
+  const res = await fetch("/api/health", { headers: apiHeaders() });
   return readJson(res);
 }
 
 export async function saveApiKey(key: string): Promise<void> {
+  const trimmed = assertLooksLikeKey(key);
   const res = await fetch("/api/key", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ key }),
+    headers: apiHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ key: trimmed }),
   });
   await readJson(res);
+  saveClientKey(trimmed);
 }
 
 export async function clearApiKey(): Promise<{ hasKey: boolean }> {
-  const res = await fetch("/api/key", { method: "DELETE" });
+  clearClientKey();
+  const res = await fetch("/api/key", { method: "DELETE", headers: apiHeaders() });
   return readJson(res);
 }
 
 export async function searchPapers(question: string): Promise<SearchResult> {
   const res = await fetch("/api/search", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: apiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ question }),
   });
   return readJson<SearchResult>(res);
@@ -58,14 +74,14 @@ export async function scoreVisible(
 ): Promise<{ papers: RankedPaper[]; pending: number; sessionId: string }> {
   const res = await fetch("/api/score", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: apiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ sessionId, ids }),
   });
   return readJson(res);
 }
 
 export async function clearServerCache(): Promise<void> {
-  await fetch("/api/cache/clear", { method: "POST" });
+  await fetch("/api/cache/clear", { method: "POST", headers: apiHeaders() });
 }
 
 export async function exportCitations(
@@ -74,7 +90,7 @@ export async function exportCitations(
 ): Promise<{ format: ExportFormat; text: string }> {
   const res = await fetch("/api/export", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: apiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ format, papers }),
   });
   return readJson(res);
@@ -83,7 +99,7 @@ export async function exportCitations(
 export async function moreLikePaper(paper: Paper): Promise<SearchResult> {
   const res = await fetch("/api/more-like", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: apiHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify({ paper }),
   });
   return readJson<SearchResult>(res);
@@ -99,7 +115,9 @@ export interface Suggestion {
 export async function fetchSuggestions(query: string): Promise<Suggestion[]> {
   const q = query.trim();
   if (q.length < 2) return [];
-  const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}`);
+  const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}`, {
+    headers: apiHeaders(),
+  });
   const body = await readJson<{ suggestions: Suggestion[] }>(res);
   return body.suggestions ?? [];
 }

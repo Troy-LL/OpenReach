@@ -138,7 +138,7 @@ describe("findMoreLikeThis", () => {
     expect(result.pending).toBe(result.papers.length - DEFAULT_PAGE_SIZE);
     expect(result.question).toBe(`More like: ${seed.title}`);
 
-    const stored = session.getSession(result.sessionId!);
+    const stored = await session.getSession(result.sessionId!);
     expect(stored?.context).toMatchObject({
       likeTitle: seed.title,
       likeAbstract: seed.abstract,
