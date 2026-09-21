@@ -7,8 +7,11 @@ import {
   POPULATION_LEGENDS,
   RECENCY_LEGENDS,
 } from "@shared/score";
+import { useState } from "react";
 import { ScoreMeter } from "./ScoreMeter";
 import { ScoreSkeleton } from "./Skeletons";
+
+const ABSTRACT_CLAMP_CHARS = 160;
 
 const SOURCE_LABEL: Record<PaperSource, string> = {
   openalex: "OpenAlex",
@@ -34,10 +37,19 @@ function pct(n: number): string {
 export function PaperCard({
   paper,
   figure,
+  selected,
+  selectionDisabled,
+  onSelectedChange,
 }: {
   paper: RankedPaper;
   figure: number;
+  selected: boolean;
+  selectionDisabled?: boolean;
+  onSelectedChange: (checked: boolean) => void;
 }) {
+  const [abstractOpen, setAbstractOpen] = useState(false);
+  const canExpand = paper.abstract.trim().length > ABSTRACT_CLAMP_CHARS;
+
   const heading = paper.url ? (
     <a
       className="text-foreground decoration-accent/40 underline-offset-3 hover:text-accent hover:underline"
@@ -52,19 +64,27 @@ export function PaperCard({
   );
 
   return (
-    <article className="plate group flex gap-4 p-5 transition-colors hover:border-[color-mix(in_oklch,var(--accent)_28%,var(--border))]">
+    <article className="plate group relative flex gap-3 p-3 transition-colors hover:border-[color-mix(in_oklch,var(--accent)_28%,var(--border))] md:gap-4 md:p-5">
+      <input
+        aria-label={`Select ${paper.title}`}
+        checked={selected}
+        className="accent-[var(--accent)] absolute top-3 right-3 h-5 w-5 shrink-0"
+        disabled={selectionDisabled}
+        type="checkbox"
+        onChange={(event) => onSelectedChange(event.currentTarget.checked)}
+      />
       <span
         aria-hidden
-        className="bg-surface-secondary text-accent mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums"
+        className="bg-surface-secondary text-accent mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold tabular-nums md:h-8 md:w-8"
       >
         {figure}
       </span>
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 pr-7">
         <p className="figure mb-2">
           {SOURCE_LABEL[paper.source]}
           {paper.year != null ? ` · ${paper.year}` : ""}
         </p>
-        <h2 className="font-serif mt-0 mb-2 text-[1.15rem] leading-snug font-semibold text-balance">
+        <h2 className="font-serif mt-0 mb-2 text-base leading-snug font-semibold text-balance md:text-[1.15rem]">
           {heading}
         </h2>
         {paper.authors && paper.authors.length > 0 ? (
@@ -86,9 +106,24 @@ export function PaperCard({
             </span>
           ) : null}
         </div>
-        <p className="text-muted mt-0 mb-4 max-w-[68ch] text-pretty leading-relaxed">
+        <p
+          className={
+            abstractOpen
+              ? "text-muted mt-0 mb-2 max-w-[68ch] text-pretty leading-relaxed md:mb-4"
+              : "text-muted mt-0 mb-2 max-w-[68ch] text-pretty leading-relaxed max-md:line-clamp-3 md:mb-4"
+          }
+        >
           {paper.abstract}
         </p>
+        {canExpand ? (
+          <button
+            className="text-accent mb-3 cursor-pointer border-0 bg-transparent p-0 text-sm font-medium md:hidden"
+            type="button"
+            onClick={() => setAbstractOpen((open) => !open)}
+          >
+            {abstractOpen ? "Show less" : "Show more"}
+          </button>
+        ) : null}
         {paper.scored ? (
           <details className="score-block">
             <summary

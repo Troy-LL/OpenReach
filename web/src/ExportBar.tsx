@@ -15,10 +15,24 @@ function downloadText(filename: string, text: string, mime: string) {
 interface Props {
   papers: RankedPaper[];
   busy?: boolean;
+  judged: number;
+  total: number;
+  page: number;
+  totalPages: number;
+  pending?: number;
   onError: (message: string) => void;
 }
 
-export function ExportBar({ papers, busy, onError }: Props) {
+export function ExportBar({
+  papers,
+  busy,
+  judged,
+  total,
+  page,
+  totalPages,
+  pending = 0,
+  onError,
+}: Props) {
   const disabled = busy || papers.length === 0;
 
   async function onExport(format: "apa" | "bibtex") {
@@ -37,14 +51,19 @@ export function ExportBar({ papers, busy, onError }: Props) {
   return (
     <div
       aria-label="Export selected papers"
-      className="mb-4 flex flex-wrap items-center gap-2"
+      className="mb-3 flex flex-wrap items-center gap-2"
       role="toolbar"
     >
-      <span className="text-muted text-sm tabular-nums">
-        {papers.length === 0
-          ? "Select papers to export"
-          : `${papers.length} selected`}
+      <span className="font-mono text-sm tabular-nums">
+        {judged}/{total}
+        {pending > 0 ? (
+          <span className="max-sm:hidden">{` · ${pending} waiting`}</span>
+        ) : null}
+        {` · p${page}/${totalPages}`}
       </span>
+      {papers.length > 0 ? (
+        <span className="text-muted text-sm tabular-nums">{papers.length} selected</span>
+      ) : null}
       <Tooltip isDisabled={papers.length > 0}>
         <Tooltip.Trigger>
           <span className="inline-flex">

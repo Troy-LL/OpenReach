@@ -86,10 +86,16 @@ export function Filters({ filters, onChange, shown, total }: Props) {
   return (
     <form
       aria-label="Result filters"
-      className="plate md:sticky md:top-[4.25rem] flex flex-col gap-4 p-4"
+      className="md:sticky md:top-[4.25rem]"
       onSubmit={(e) => e.preventDefault()}
     >
-      <div className="flex items-baseline justify-between gap-2">
+      <details className="filters-disclosure plate">
+        <summary className="filters-summary">
+          <span>Filters · {shown}/{total}</span>
+          <span aria-hidden className="filters-chevron" />
+        </summary>
+        <div className="filters-body flex flex-col gap-3 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:gap-4 md:p-4">
+      <div className="hidden items-baseline justify-between gap-2 md:flex">
         <div>
           <p className="figure mb-1">Refine</p>
           <h2 className="m-0 text-lg font-semibold">Filters</h2>
@@ -315,12 +321,15 @@ export function Filters({ filters, onChange, shown, total }: Props) {
 
       <Button
         className="pressable"
+        size="sm"
         type="button"
         variant="secondary"
         onPress={() => onChange(DEFAULT_FILTERS)}
       >
         Reset filters
       </Button>
+        </div>
+      </details>
     </form>
   );
 }
