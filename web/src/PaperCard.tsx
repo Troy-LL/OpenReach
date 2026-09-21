@@ -84,24 +84,24 @@ export function PaperCard({
           {SOURCE_LABEL[paper.source]}
           {paper.year != null ? ` · ${paper.year}` : ""}
         </p>
-        <h2 className="font-serif mt-0 mb-2 text-base leading-snug font-semibold text-balance md:text-[1.15rem]">
+        <h2 className="font-serif mt-0 mb-1 max-md:line-clamp-2 text-base leading-snug font-semibold text-balance md:mb-2 md:text-[1.15rem]">
           {heading}
         </h2>
         {paper.authors && paper.authors.length > 0 ? (
-          <p className="text-muted mt-0 mb-2 text-sm text-pretty">
+          <p className="text-muted mt-0 mb-1 truncate text-sm md:mb-2">
             {paper.authors.length > 4
               ? `${paper.authors.slice(0, 4).join(", ")}, et al.`
               : paper.authors.join(", ")}
           </p>
         ) : null}
-        <div className="mb-3 flex min-w-0 flex-wrap items-center gap-2">
+        <div className="mb-2 flex min-w-0 flex-wrap items-center gap-2 md:mb-3">
           {paper.venue ? (
             <Chip className="max-w-full" size="sm" variant="soft">
               <Chip.Label className="truncate">{paper.venue}</Chip.Label>
             </Chip>
           ) : null}
           {paper.doi ? (
-            <span className="font-mono text-muted max-w-full text-xs break-all">
+            <span className="font-mono text-muted max-w-full truncate text-xs">
               DOI {paper.doi}
             </span>
           ) : null}
@@ -128,7 +128,7 @@ export function PaperCard({
           <details className="score-block">
             <summary
               aria-label="Jev scores"
-              className="flex cursor-pointer flex-wrap items-center gap-1.5"
+              className="flex cursor-pointer flex-wrap items-center gap-1.5 max-md:flex-nowrap max-md:overflow-hidden"
             >
               <Chip size="sm" variant="soft">
                 <Chip.Label>Rel {pct(paper.relevance)}</Chip.Label>

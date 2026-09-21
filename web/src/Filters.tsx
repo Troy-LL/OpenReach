@@ -17,6 +17,7 @@ import {
   type SortKey,
 } from "@shared/filters";
 import type { PaperSource } from "@shared/types";
+import { useEffect, useRef } from "react";
 
 const SOURCE_LABEL: Record<PaperSource, string> = {
   openalex: "OpenAlex",
@@ -71,6 +72,20 @@ function asKind(key: string | number | null): PaperKind {
 }
 
 export function Filters({ filters, onChange, shown, total }: Props) {
+  const disclosure = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const node = disclosure.current;
+    if (!node) return;
+    const mq = window.matchMedia("(min-width: 768px)");
+    const sync = () => {
+      node.open = mq.matches;
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
   const patch = (partial: Partial<ResultFilters>) =>
     onChange({ ...filters, ...partial });
 
@@ -89,7 +104,7 @@ export function Filters({ filters, onChange, shown, total }: Props) {
       className="md:sticky md:top-[4.25rem]"
       onSubmit={(e) => e.preventDefault()}
     >
-      <details className="filters-disclosure plate">
+      <details ref={disclosure} className="filters-disclosure plate">
         <summary className="filters-summary">
           <span>Filters · {shown}/{total}</span>
           <span aria-hidden className="filters-chevron" />

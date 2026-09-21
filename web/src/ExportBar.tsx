@@ -51,7 +51,7 @@ export function ExportBar({
   return (
     <div
       aria-label="Export selected papers"
-      className="mb-3 flex flex-wrap items-center gap-2"
+      className="mb-2 flex flex-wrap items-center gap-2"
       role="toolbar"
     >
       <span className="font-mono text-sm tabular-nums">

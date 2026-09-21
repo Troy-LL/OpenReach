@@ -61,7 +61,9 @@ describe("phone and desktop chrome", () => {
     expect(filters).toContain("Filters · {shown}/{total}");
     expect(filters).toMatch(/filters-chevron|chevron/);
     expect(filters).not.toMatch(/<details[^>]*\sopen[\s>]/);
+    expect(filters).toContain('matchMedia("(min-width: 768px)")');
     expect(styles).toContain("filters-disclosure");
+    expect(styles).toContain("::details-content");
     expect(styles).toMatch(/min-width:\s*768px/);
   });
 

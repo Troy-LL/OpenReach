@@ -164,8 +164,14 @@ body {
     display: none;
   }
 
+  .filters-disclosure::details-content {
+    content-visibility: visible;
+    display: block;
+  }
+
   .filters-disclosure > .filters-body {
     display: flex !important;
+    flex-direction: column;
   }
 }
 

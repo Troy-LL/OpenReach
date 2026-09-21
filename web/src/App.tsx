@@ -333,12 +333,12 @@ export function App() {
       }
     >
       <div className="mb-4">
-        <h1 className="mt-0 mb-3 text-lg md:text-[clamp(1.35rem,2.5vw,1.75rem)] leading-snug font-semibold text-balance">
+        <h1 className="mt-0 mb-2 max-md:line-clamp-2 text-lg md:text-[clamp(1.35rem,2.5vw,1.75rem)] leading-snug font-semibold text-balance">
           {heading}
         </h1>
         <div className="search-shell p-2 sm:p-4">{searchForm(true)}</div>
         {error ? (
-          <Alert className="mt-4" role="alert" status="danger">
+          <Alert className="mt-3" role="alert" status="danger">
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Title>Search did not finish</Alert.Title>
@@ -347,23 +347,18 @@ export function App() {
           </Alert>
         ) : null}
         {sampleMode ? (
-          <Alert className="mt-4" status="accent">
-            <Alert.Content>
-              <Alert.Title>Sample results</Alert.Title>
-              <Alert.Description>
-                Fixed examples for trying filters.
-                {!hasKey ? <> {addKeyLink} to search live.</> : null}
-              </Alert.Description>
-            </Alert.Content>
-          </Alert>
+          <p className="text-muted mt-2 mb-0 text-sm">
+            Sample results — fixed examples for filters.
+            {!hasKey ? <> {addKeyLink} to search live.</> : null}
+          </p>
         ) : !hasKey ? (
-          <p className="text-muted mt-3 mb-0 text-sm">
+          <p className="text-muted mt-2 mb-0 text-sm">
             {addKeyLink} to run a live search.
           </p>
         ) : null}
       </div>
 
-      <div className="grid items-start gap-7 md:grid-cols-[16rem_1fr]">
+      <div className="grid items-start gap-3 md:grid-cols-[16rem_1fr] md:gap-7">
         <aside>
           {busy || !result ? (
             <FilterSkeleton />
