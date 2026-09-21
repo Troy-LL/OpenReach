@@ -195,13 +195,24 @@ export function App() {
   }
 
   const addKeyLink = (
-    <Button className="px-0" variant="ghost" onPress={resetToLanding}>
-      Add a TypeSafe key
-    </Button>
+    <button
+      className="text-accent cursor-pointer border-0 bg-transparent p-0 font-medium underline-offset-2 hover:underline"
+      type="button"
+      onClick={resetToLanding}
+    >
+      Add key
+    </button>
   );
 
-  const searchForm = (
-    <form className="flex flex-col gap-3 sm:flex-row sm:items-stretch" onSubmit={onSubmit}>
+  const searchForm = (compact = false) => (
+    <form
+      className={
+        compact
+          ? "flex flex-row items-stretch gap-2"
+          : "flex flex-col gap-3 sm:flex-row sm:items-stretch"
+      }
+      onSubmit={onSubmit}
+    >
       <SuggestField
         disabled={busy || !hasKey}
         value={draft}
@@ -229,9 +240,14 @@ export function App() {
         </SearchField>
       </SuggestField>
       <Button
-        className="pressable min-h-11 w-full shrink-0 sm:w-auto"
+        className={
+          compact
+            ? "pressable min-h-11 shrink-0"
+            : "pressable min-h-11 w-full shrink-0 sm:w-auto"
+        }
         isDisabled={!draft.trim() || !hasKey}
         isPending={busy}
+        size={compact ? "sm" : undefined}
         type="submit"
       >
         {busy ? "Searching…" : "Search"}
@@ -285,7 +301,7 @@ export function App() {
             each paper when it lands on the current page.
           </p>
         </div>
-        <div className="enter enter-1 search-shell p-3 sm:p-4">{searchForm}</div>
+        <div className="enter enter-1 search-shell p-3 sm:p-4">{searchForm()}</div>
         {error ? (
           <Alert className="mt-5" role="alert" status="danger">
             <Alert.Indicator />
@@ -320,13 +336,13 @@ export function App() {
         </Button>
       }
     >
-      <div className="mb-8">
-        <h1 className="mt-0 mb-4 text-[clamp(1.35rem,2.5vw,1.75rem)] leading-snug font-semibold text-balance">
+      <div className="mb-4">
+        <h1 className="mt-0 mb-2 max-md:line-clamp-2 text-lg md:text-[clamp(1.35rem,2.5vw,1.75rem)] leading-snug font-semibold text-balance">
           {heading}
         </h1>
-        <div className="search-shell p-3 sm:p-4">{searchForm}</div>
+        <div className="search-shell p-2 sm:p-4">{searchForm(true)}</div>
         {error ? (
-          <Alert className="mt-4" role="alert" status="danger">
+          <Alert className="mt-3" role="alert" status="danger">
             <Alert.Indicator />
             <Alert.Content>
               <Alert.Title>Search did not finish</Alert.Title>
@@ -335,23 +351,16 @@ export function App() {
           </Alert>
         ) : null}
         {sampleMode ? (
-          <Alert className="mt-4" status="accent">
-            <Alert.Content>
-              <Alert.Title>Sample results</Alert.Title>
-              <Alert.Description>
-                Fixed examples for trying filters.
-                {!hasKey ? <> {addKeyLink} to search live.</> : null}
-              </Alert.Description>
-            </Alert.Content>
-          </Alert>
-        ) : !hasKey ? (
-          <p className="text-muted mt-3 mb-0 text-sm">
-            {addKeyLink} to run a live search.
+          <p className="text-muted mt-2 mb-0 truncate text-sm">
+            Sample results
+            {!hasKey ? <> · {addKeyLink}</> : null}
           </p>
+        ) : !hasKey ? (
+          <p className="text-muted mt-2 mb-0 truncate text-sm">{addKeyLink}</p>
         ) : null}
       </div>
 
-      <div className="grid items-start gap-7 md:grid-cols-[16rem_1fr]">
+      <div className="grid items-start gap-3 md:grid-cols-[16rem_1fr] md:gap-7">
         <aside>
           {busy || !result ? (
             <FilterSkeleton />
@@ -387,16 +396,14 @@ export function App() {
             </EmptyState>
           ) : result ? (
             <>
-              <p className="text-muted mb-4 text-sm tabular-nums">
-                Judged <strong className="text-foreground">{scoredCount}</strong> of{" "}
-                {result.papers.length}
-                {result.pending > 0 ? ` · ${result.pending} waiting` : null}
-                {" · "}
-                page {slice.page} of {slice.totalPages}
-              </p>
               <ExportBar
                 busy={busy}
+                judged={scoredCount}
+                page={slice.page}
                 papers={selectedPapers}
+                pending={result.pending}
+                total={result.papers.length}
+                totalPages={slice.totalPages}
                 onError={setError}
               />
               <ResultList
@@ -404,35 +411,29 @@ export function App() {
                 startIndex={slice.startIndex}
                 onVisibleIds={onVisibleIds}
                 renderItem={(paper, index) => (
-                  <div className="flex items-start gap-3">
-                    <input
-                      aria-label={`Select ${paper.title}`}
-                      checked={selectedIds.has(paper.id)}
-                      className="mt-5 h-5 w-5 shrink-0 accent-[var(--accent)]"
-                      disabled={busy}
-                      type="checkbox"
-                      onChange={(event) =>
-                        toggleSelected(paper.id, event.currentTarget.checked)
-                      }
+                  <div>
+                    <PaperCard
+                      figure={index + 1}
+                      paper={paper}
+                      selected={selectedIds.has(paper.id)}
+                      selectionDisabled={busy}
+                      onSelectedChange={(checked) => toggleSelected(paper.id, checked)}
                     />
-                    <div className="min-w-0 flex-1">
-                      <PaperCard figure={index + 1} paper={paper} />
-                      <div className="mt-2 flex min-h-11 items-center justify-end">
-                        {hasKey ? (
-                          <Button
-                            aria-label={`Find papers more like ${paper.title}`}
-                            className="pressable"
-                            isDisabled={busy}
-                            size="sm"
-                            variant="ghost"
-                            onPress={() => onMoreLike(paper)}
-                          >
-                            More like this
-                          </Button>
-                        ) : (
-                          <KeyLockedChip hint="Find related papers after you save a TypeSafe key." />
-                        )}
-                      </div>
+                    <div className="mt-1 flex items-center justify-end">
+                      {hasKey ? (
+                        <Button
+                          aria-label={`Find papers more like ${paper.title}`}
+                          className="pressable"
+                          isDisabled={busy}
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => onMoreLike(paper)}
+                        >
+                          More like this
+                        </Button>
+                      ) : (
+                        <KeyLockedChip hint="Find related papers after you save a TypeSafe key." />
+                      )}
                     </div>
                   </div>
                 )}

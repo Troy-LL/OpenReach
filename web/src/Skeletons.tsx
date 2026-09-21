@@ -32,24 +32,25 @@ export function SearchSkeleton() {
 
 export function FilterSkeleton() {
   return (
-    <div aria-hidden className="plate flex flex-col gap-4 p-4">
-      <Bone className="h-5 w-24" />
-      <Bone className="h-10 w-full" />
-      <Bone className="h-10 w-full" />
-      <Bone className="h-3 w-full" />
-      <Bone className="h-3 w-full" />
-      <Bone className="h-16 w-full" />
+    <div aria-hidden className="plate flex flex-col gap-3 p-3 md:gap-4 md:p-4">
+      <Bone className="h-5 w-36" />
+      <div className="hidden flex-col gap-4 md:flex">
+        <Bone className="h-10 w-full" />
+        <Bone className="h-10 w-full" />
+        <Bone className="h-3 w-full" />
+        <Bone className="h-3 w-full" />
+        <Bone className="h-16 w-full" />
+      </div>
     </div>
   );
 }
 
 export function PaperSkeleton() {
   return (
-    <article className="plate p-5">
+    <article className="plate p-3 md:p-5">
       <Bone className="mb-3 h-3 w-32" />
       <Bone className="mb-2 h-6 w-11/12" />
       <Bone className="mb-5 h-6 w-2/3" />
-      <Bone className="mb-2 h-3.5 w-full" />
       <Bone className="mb-2 h-3.5 w-full" />
       <Bone className="mb-5 h-3.5 w-4/5" />
       <ScoreSkeleton />
