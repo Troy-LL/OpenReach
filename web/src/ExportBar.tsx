@@ -1,4 +1,4 @@
-import { Button } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import type { RankedPaper } from "@shared/types";
 import { exportCitations } from "./api";
 
@@ -45,26 +45,40 @@ export function ExportBar({ papers, busy, onError }: Props) {
           ? "Select papers to export"
           : `${papers.length} selected`}
       </span>
-      <Button
-        aria-label="Export selected papers as APA"
-        className="pressable"
-        isDisabled={disabled}
-        size="sm"
-        variant="secondary"
-        onPress={() => void onExport("apa")}
-      >
-        Export APA
-      </Button>
-      <Button
-        aria-label="Export selected papers as BibTeX"
-        className="pressable"
-        isDisabled={disabled}
-        size="sm"
-        variant="secondary"
-        onPress={() => void onExport("bibtex")}
-      >
-        Export .bib
-      </Button>
+      <Tooltip isDisabled={papers.length > 0}>
+        <Tooltip.Trigger>
+          <span className="inline-flex">
+            <Button
+              aria-label="Export selected papers as APA"
+              className="pressable"
+              isDisabled={disabled}
+              size="sm"
+              variant="secondary"
+              onPress={() => void onExport("apa")}
+            >
+              Export APA
+            </Button>
+          </span>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Select papers to export</Tooltip.Content>
+      </Tooltip>
+      <Tooltip isDisabled={papers.length > 0}>
+        <Tooltip.Trigger>
+          <span className="inline-flex">
+            <Button
+              aria-label="Export selected papers as BibTeX"
+              className="pressable"
+              isDisabled={disabled}
+              size="sm"
+              variant="secondary"
+              onPress={() => void onExport("bibtex")}
+            >
+              Export .bib
+            </Button>
+          </span>
+        </Tooltip.Trigger>
+        <Tooltip.Content>Select papers to export</Tooltip.Content>
+      </Tooltip>
     </div>
   );
 }

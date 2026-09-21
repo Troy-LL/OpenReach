@@ -17,7 +17,7 @@ export function ScoreMeter({
 
   return (
     <div className="flex flex-col gap-1">
-      <div className="grid grid-cols-[6.5rem_1fr_2.6rem] items-center gap-2">
+      <div className="grid grid-cols-[minmax(0,5.5rem)_1fr_2.6rem] items-center gap-2 sm:grid-cols-[6.5rem_1fr_2.6rem]">
         <span className="text-muted text-xs">{label}</span>
         <div
           aria-hidden
@@ -31,7 +31,7 @@ export function ScoreMeter({
         <span className="font-mono text-right text-xs tabular-nums">{display}</span>
       </div>
       {justification ? (
-        <p className="text-muted m-0 pl-[6.5rem] text-xs text-pretty leading-snug">
+        <p className="text-muted m-0 min-w-0 pl-0 text-xs text-pretty leading-snug sm:pl-[6.5rem]">
           {justification}
         </p>
       ) : null}

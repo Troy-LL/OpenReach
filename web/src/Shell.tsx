@@ -11,24 +11,24 @@ export function Shell({ children, plate, trailing, centered = false }: Props) {
   return (
     <div className="min-h-dvh">
       <header className="border-border/70 bg-surface/80 sticky top-0 z-20 border-b backdrop-blur-md">
-        <div className="mx-auto flex h-14 w-full max-w-[72rem] items-center gap-3 px-5">
-          <p className="m-0 text-[1.05rem] font-semibold tracking-tight">
+        <div className="mx-auto flex min-h-14 w-full max-w-[72rem] items-center gap-2 px-[max(1.25rem,env(safe-area-inset-left))] py-2 pe-[max(1.25rem,env(safe-area-inset-right))] sm:gap-3">
+          <p className="m-0 min-w-0 truncate text-[1.05rem] font-semibold tracking-tight">
             <span className="text-accent">OpenReach</span>
           </p>
           {plate ? (
             <>
-              <span aria-hidden className="bg-border h-4 w-px" />
-              <p className="text-muted m-0 text-sm">{plate}</p>
+              <span aria-hidden className="bg-border h-4 w-px shrink-0" />
+              <p className="text-muted m-0 min-w-0 truncate text-sm">{plate}</p>
             </>
           ) : null}
-          <div className="ms-auto flex items-center gap-2">{trailing}</div>
+          <div className="ms-auto flex shrink-0 items-center gap-2">{trailing}</div>
         </div>
       </header>
       <div
         className={
           centered
-            ? "mx-auto flex w-full max-w-[40rem] flex-col px-5 pt-[min(18vh,8rem)] pb-24"
-            : "mx-auto w-full max-w-[72rem] px-5 py-8 pb-24"
+            ? "mx-auto flex w-full max-w-[40rem] flex-col px-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] pt-[min(12vh,6rem)] pb-[max(6rem,env(safe-area-inset-bottom))] sm:pt-[min(18vh,8rem)]"
+            : "mx-auto w-full max-w-[72rem] px-[max(1.25rem,env(safe-area-inset-left))] pe-[max(1.25rem,env(safe-area-inset-right))] py-8 pb-[max(6rem,env(safe-area-inset-bottom))]"
         }
       >
         {children}

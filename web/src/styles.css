@@ -47,6 +47,8 @@ body,
 #root {
   margin: 0;
   min-height: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
@@ -97,6 +99,41 @@ body {
   box-shadow:
     0 1px 2px oklch(0.3 0.02 250 / 0.05),
     0 18px 40px oklch(0.4 0.04 230 / 0.08);
+}
+
+.search-shell .search-field,
+.search-shell .search-field__group,
+.search-shell .textfield {
+  min-width: 0;
+  width: 100%;
+}
+
+.search-shell .search-field__input,
+.search-shell [data-slot="input"],
+.search-shell [data-slot="search-field-input"] {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.keygate-actions .button {
+  min-height: 2.75rem;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .keygate-actions .button {
+    flex: 1 1 0;
+    width: auto;
+  }
+}
+
+.score-block > summary {
+  list-style: none;
+}
+
+.score-block > summary::-webkit-details-marker {
+  display: none;
 }
 
 .pressable {
