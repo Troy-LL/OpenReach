@@ -38,6 +38,13 @@ describe("HTTP API", () => {
     const body = (await res.json()) as SearchResult;
     expect(body.papers.length).toBe(DEMO_RESULT.papers.length);
     expect(body.question).toContain("residual");
+    const unet = body.papers.find((p) => p.id === "epmc:unet");
+    expect(unet?.url).toMatch(/pmc\/articles\/PMC6435980|articles\/PMC6435980/i);
+    const undated = body.papers.find((p) => p.id === "oa:undated");
+    expect(undated?.url).toBeNull();
+    for (const paper of body.papers) {
+      expect(paper.url ?? "").not.toMatch(/openalex\.org\/W/i);
+    }
   });
 
   it("rejects an empty search", async () => {

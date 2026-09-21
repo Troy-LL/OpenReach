@@ -70,6 +70,27 @@ describe("parseEuropePmcResults", () => {
     expect(papers[0].doi).toBe("10.1000/example");
     expect(papers[0].url).toContain("europepmc.org");
   });
+
+  it("prefers a PMC article URL over doi.org when pmcid is present", () => {
+    const papers = parseEuropePmcResults([
+      {
+        id: "310",
+        title: "Recurrent residual U-Net for medical image segmentation",
+        abstractText: "A residual U-Net variant for biomedical segmentation tasks.",
+        pubYear: "2019",
+        journalTitle: "Journal of medical imaging",
+        doi: "10.1117/1.jmi.6.1.014006",
+        pmid: "30840768",
+        pmcid: "PMC6435980",
+        source: "MED",
+      },
+    ]);
+    expect(papers).toHaveLength(1);
+    expect(papers[0].url).toMatch(
+      /(?:europepmc\.org\/articles\/PMC6435980|ncbi\.nlm\.nih\.gov\/pmc\/articles\/PMC6435980)/,
+    );
+    expect(papers[0].url).not.toContain("doi.org");
+  });
 });
 
 describe("dedupe across arXiv DOI forms", () => {

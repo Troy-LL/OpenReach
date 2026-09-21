@@ -11,6 +11,7 @@ import {
   searchPubmed,
 } from "./indexes.js";
 import { sanitizeSearchQuery, topicSearchQuery } from "./query.js";
+import { resolvePaperUrl } from "./paper-url.js";
 import { searchArxiv, searchEuropePmc } from "./sources.js";
 import type { PaperSource } from "./types.js";
 
@@ -18,8 +19,10 @@ const OPENALEX = "https://api.openalex.org";
 const S2 = "https://api.semanticscholar.org/graph/v1";
 const MAILTO = process.env.OPENALEX_MAILTO ?? "openreach@localhost";
 const USER_AGENT = "OpenReach/0.1 (mailto:openreach@localhost)";
-const OPENALEX_WORK_SELECT =
-  "id,doi,title,display_name,publication_year,primary_location,abstract_inverted_index,related_works,authorships";
+export const OPENALEX_WORK_SELECT =
+  "id,doi,title,display_name,publication_year,primary_location,best_oa_location,open_access,abstract_inverted_index,related_works,authorships";
+export const S2_PAPER_FIELDS =
+  "paperId,title,abstract,year,venue,externalIds,url,authors,openAccessPdf";
 
 export function invertAbstract(
   inverted: Record<string, number[]> | null | undefined,
@@ -58,16 +61,21 @@ async function getJson<T>(
   return (await res.json()) as T;
 }
 
+interface OpenAlexLocation {
+  landing_page_url?: string | null;
+  pdf_url?: string | null;
+  source?: { display_name?: string | null } | null;
+}
+
 interface OpenAlexWork {
   id: string;
   doi?: string | null;
   title?: string | null;
   display_name?: string | null;
   publication_year?: number | null;
-  primary_location?: {
-    landing_page_url?: string | null;
-    source?: { display_name?: string | null } | null;
-  } | null;
+  primary_location?: OpenAlexLocation | null;
+  best_oa_location?: OpenAlexLocation | null;
+  open_access?: { oa_url?: string | null } | null;
   abstract_inverted_index?: Record<string, number[]> | null;
   related_works?: string[] | null;
   authorships?: { author?: { display_name?: string | null } | null }[] | null;
@@ -92,6 +100,7 @@ interface S2Paper {
   url?: string | null;
   externalIds?: { DOI?: string | null } | null;
   authors?: { name?: string | null }[] | null;
+  openAccessPdf?: { url?: string | null } | null;
 }
 
 export function openAlexToPaper(work: OpenAlexWork, source: Paper["source"]): Paper {
@@ -106,9 +115,15 @@ export function openAlexToPaper(work: OpenAlexWork, source: Paper["source"]): Pa
     year: work.publication_year ?? null,
     venue: work.primary_location?.source?.display_name ?? null,
     doi,
-    url:
-      work.primary_location?.landing_page_url ??
-      (doi ? `https://doi.org/${doi}` : work.id),
+    url: resolvePaperUrl(
+      [
+        work.best_oa_location?.pdf_url,
+        work.open_access?.oa_url,
+        work.best_oa_location?.landing_page_url,
+        work.primary_location?.landing_page_url,
+      ],
+      doi,
+    ),
     source,
     authors: authorsFromStringList(
       work.authorships?.map((a) => a.author?.display_name ?? ""),
@@ -125,7 +140,7 @@ export function s2ToPaper(p: S2Paper): Paper {
     year: p.year ?? null,
     venue: p.venue ?? null,
     doi,
-    url: p.url ?? (doi ? `https://doi.org/${doi}` : null),
+    url: resolvePaperUrl([p.openAccessPdf?.url, p.url], doi),
     source: "semantic_scholar",
     authors: authorsFromStringList(p.authors),
   };
@@ -226,7 +241,7 @@ export async function searchSemanticScholar(
 
   const url =
     `${S2}/paper/search?query=${encodeURIComponent(q)}` +
-    `&limit=${limit}&fields=paperId,title,abstract,year,venue,externalIds,url,authors`;
+    `&limit=${limit}&fields=${S2_PAPER_FIELDS}`;
   const data = await getJson<{ data?: S2Paper[] }>(url, headers);
   if (!data?.data) return [];
   return data.data.map(s2ToPaper);
