@@ -24,7 +24,7 @@
   "workers_dev": true,
   "routes": [
     {
-      "pattern": "openreach.niche.tech",
+      "pattern": "openreach.niched.tech",
       "custom_domain": true
     }
   ]

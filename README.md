@@ -107,22 +107,22 @@ Pass `TYPESAFE_API_KEY` in through the host environment or the env file at run t
 
 ## Deploy to Cloudflare
 
-Production is the Worker named `openreach` on Troy's personal Cloudflare account. The live URL is **https://openreach.niche.tech** (zone `niche.tech`). `wrangler.jsonc` binds that hostname as a Workers custom domain and still keeps the `*.workers.dev` fallback.
+Production is the Worker named `openreach` on Troy's personal Cloudflare account. The live URL is **https://openreach.niched.tech** (zone `niched.tech`, same pattern as `pupsync` and `may-pasok-ba`). `wrangler.jsonc` binds that hostname as a Workers custom domain and still keeps the `*.workers.dev` fallback.
 
-Build the UI, then deploy from an account that owns zone `niche.tech`:
+Build the UI, then deploy from an account that owns zone `niched.tech`:
 
 ```bash
 npx wrangler login
 npm run deploy
 ```
 
-That runs `vite build` and `wrangler deploy`. If the zone is already on this Cloudflare account, deploy creates the DNS record for `openreach.niche.tech` automatically. Do not point this Worker at any other zone.
+That runs `vite build` and `wrangler deploy`. If the zone is already on this Cloudflare account, deploy creates the DNS record for `openreach.niched.tech` automatically.
 
 If deploy says the zone is missing or the custom domain cannot be attached, finish it in the dashboard (personal account, not ASES):
 
 1. Workers & Pages → **openreach** → Settings → Domains & Routes → Add → Custom Domain
-2. Hostname: `openreach.niche.tech`
-3. Cloudflare issues the certificate and a proxied record on `niche.tech`. No CNAME outside that zone.
+2. Hostname: `openreach.niched.tech`
+3. Cloudflare issues the certificate and a proxied record on `niched.tech`.
 
 No secret is required for TypeSafe / Jev. Visitors paste their own key; it stays in the browser and is sent only on live Jev requests. OpenReach does not persist it in Durable Objects, KV, or R2. The Durable Object binding is for short-lived search sessions (retrieved papers waiting to be scored), not keys.
 
