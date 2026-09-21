@@ -114,6 +114,10 @@ describe("phone and desktop chrome", () => {
     expect(styles).toContain(".paper-select");
     expect(styles).toMatch(/\.paper-select[\s\S]*2\.75rem/);
     expect(styles).toMatch(/\.paper-select-box[\s\S]*border/);
+    expect(styles).not.toMatch(/opacity:\s*0\.001/);
+    expect(styles).not.toMatch(/appearance:\s*none/);
+    expect(styles).toMatch(/clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
+    expect(styles).toMatch(/clip-path:\s*inset\(50%\)/);
     expect(app).not.toMatch(/aria-label=\{`Select \$\{paper\.title\}`\}/);
   });
 
