@@ -261,6 +261,19 @@ body {
   list-style: none;
 }
 
+.score-chip {
+  flex-shrink: 0;
+  max-width: none;
+}
+
+.score-chip,
+.score-chip [data-slot="chip-label"],
+.score-chip .chip__label {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
 .score-block > summary::-webkit-details-marker {
   display: none;
 }

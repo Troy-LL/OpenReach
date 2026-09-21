@@ -136,32 +136,26 @@ export function PaperCard({
           <details className="score-block">
             <summary
               aria-label="Jev scores"
-              className="flex cursor-pointer flex-wrap items-center gap-1.5"
+              className="flex min-w-0 cursor-pointer flex-wrap items-center gap-1.5"
             >
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Rel {pct(paper.relevance)}</Chip.Label>
               </Chip>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Method {paper.method.toFixed(0)}</Chip.Label>
               </Chip>
-              <span className="max-md:hidden">
-                <Chip size="sm" variant="soft">
-                  <Chip.Label>Pop {paper.population.toFixed(0)}</Chip.Label>
-                </Chip>
-              </span>
-              <Chip size="sm" variant="soft">
+              <Chip className="score-chip" size="sm" variant="soft">
+                <Chip.Label>Pop {paper.population.toFixed(0)}</Chip.Label>
+              </Chip>
+              <Chip className="score-chip" size="sm" variant="soft">
                 <Chip.Label>Evid {paper.evidence.toFixed(0)}</Chip.Label>
               </Chip>
-              <span className="max-md:hidden">
-                <Chip size="sm" variant="soft">
-                  <Chip.Label>Rec {paper.recency.toFixed(0)}</Chip.Label>
-                </Chip>
-              </span>
-              <span className="max-md:hidden">
-                <Chip size="sm" variant="soft">
-                  <Chip.Label>Review {pct(paper.isReview)}</Chip.Label>
-                </Chip>
-              </span>
+              <Chip className="score-chip" size="sm" variant="soft">
+                <Chip.Label>Rec {paper.recency.toFixed(0)}</Chip.Label>
+              </Chip>
+              <Chip className="score-chip" size="sm" variant="soft">
+                <Chip.Label>Review {pct(paper.isReview)}</Chip.Label>
+              </Chip>
               <span className="text-muted text-xs">Details</span>
             </summary>
             <div className="mt-3 flex flex-col gap-3">

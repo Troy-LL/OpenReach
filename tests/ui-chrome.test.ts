@@ -46,6 +46,7 @@ describe("phone and desktop chrome", () => {
     expect(app).toContain("More like this");
     expect(gatedHint).toContain("Needs TypeSafe key");
     expect(gatedHint).not.toMatch(/<LockIcon \/>\s*Needs TypeSafe key/);
+    expect(gatedHint).toContain("Needs key");
     expect(gatedHint).toMatch(/aria-label="Needs TypeSafe key"|sr-only/);
   });
 
@@ -116,15 +117,20 @@ describe("phone and desktop chrome", () => {
     expect(app).not.toMatch(/aria-label=\{`Select \$\{paper\.title\}`\}/);
   });
 
-  it("lets phone score chips wrap or compact instead of clipping Review", () => {
+  it("wraps every score chip label so Review cannot clip at 390", () => {
     expect(paperCard).not.toMatch(/max-md:flex-nowrap/);
     expect(paperCard).not.toMatch(/max-md:overflow-hidden/);
+    expect(paperCard).not.toMatch(/max-md:hidden/);
     expect(paperCard).toMatch(/flex-wrap/);
-    expect(paperCard).toMatch(/max-md:hidden/);
+    expect(paperCard).toContain("score-chip");
     expect(paperCard).toContain("Rel ");
     expect(paperCard).toContain("Method ");
+    expect(paperCard).toContain("Pop ");
     expect(paperCard).toContain("Evid ");
+    expect(paperCard).toContain("Rec ");
+    expect(paperCard).toContain("Review ");
     expect(paperCard).toContain("Details");
+    expect(styles).toContain(".score-chip");
     expect(paperCard).toMatch(/overflow-x-clip/);
     expect(paperCard).toMatch(/min-w-0/);
   });
