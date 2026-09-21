@@ -44,16 +44,19 @@ describe("KeyGate TypeSafe console footer", () => {
 });
 
 describe("Connect MCP after KeyGate", () => {
-  it("copies a Cursor mcp.json snippet with the hosted URL and browser key header", () => {
+  it("copies a standard remote MCP snippet for any MCP-capable agent", () => {
     expect(connectMcp).toContain("Connect MCP");
     expect(connectMcp).toContain("Copy config");
-    expect(connectMcp).toContain("cursorMcpSnippet");
+    expect(connectMcp).toContain("remoteMcpSnippet");
     expect(connectMcp).toContain("remoteMcpUrl");
+    expect(connectMcp).toMatch(/MCP-capable agent/i);
+    expect(connectMcp).toMatch(/Claude Desktop/i);
+    expect(connectMcp).toMatch(/Windsurf|Copilot/i);
+    expect(connectMcp).toMatch(/standard MCP remote/i);
     expect(connectMcp).toMatch(/needs your TypeSafe key from this browser/i);
     expect(connectMcp).toMatch(/don.t store it on the server/i);
-    expect(connectMcp).toMatch(
-      /Paste into Cursor → Settings → MCP \/ mcp\.json/,
-    );
+    expect(connectMcp).not.toMatch(/Settings → MCP/);
+    expect(connectMcp).not.toContain("mcp.json");
   });
 
   it("shows an error when the clipboard write does not stick", () => {

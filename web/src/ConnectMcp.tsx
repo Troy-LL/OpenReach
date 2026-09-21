@@ -1,12 +1,12 @@
 import { Alert, Button } from "@heroui/react";
-import { cursorMcpSnippet, remoteMcpUrl } from "@shared/mcp-connect";
+import { remoteMcpSnippet, remoteMcpUrl } from "@shared/mcp-connect";
 import { useState } from "react";
 
 export function ConnectMcp({ apiKey }: { apiKey: string }) {
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState<string | null>(null);
   const url = remoteMcpUrl();
-  const snippet = cursorMcpSnippet(apiKey, url);
+  const snippet = remoteMcpSnippet(apiKey, url);
 
   async function copy() {
     if (!apiKey) return;
@@ -17,16 +17,19 @@ export function ConnectMcp({ apiKey }: { apiKey: string }) {
     } catch {
       setCopied(false);
       setCopyError(
-        "Couldn't copy. Select the snippet and paste it into Cursor → Settings → MCP / mcp.json yourself.",
+        "Couldn't copy. Paste the config into your MCP-capable agent yourself.",
       );
     }
   }
 
   return (
     <section className="enter enter-2 search-shell mt-8 p-5 text-left">
-      <h2 className="mt-0 mb-2 text-lg font-semibold tracking-tight">
+      <h2 className="mt-0 mb-1 text-lg font-semibold tracking-tight">
         Connect MCP
       </h2>
+      <p className="text-muted mb-3 text-sm text-pretty">
+        Standard MCP remote server config — a URL plus your TypeSafe key header.
+      </p>
       <p className="text-muted mb-3 font-mono text-sm break-all">{url}</p>
       <Button
         className="pressable min-h-11"
@@ -46,8 +49,9 @@ export function ConnectMcp({ apiKey }: { apiKey: string }) {
         </Alert>
       ) : null}
       <p className="text-muted mt-3 mb-0 text-sm text-pretty">
-        Paste into Cursor → Settings → MCP / mcp.json.
-        Needs your TypeSafe key from this browser; we don’t store it on the server.
+        Copy config → paste into your MCP-capable agent (Claude Desktop, Cursor,
+        Windsurf, Copilot, and others). Needs your TypeSafe key from this browser;
+        we don’t store it on the server.
       </p>
     </section>
   );
