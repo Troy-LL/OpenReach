@@ -68,7 +68,8 @@ export function KeyGate({ onSaved, onBrowseSample, sampleBusy }: Props) {
             <Label>TypeSafe key</Label>
             <Input
               autoComplete="off"
-              placeholder="Paste the full key from the TypeSafe console"
+              className="min-w-0"
+              placeholder="Paste your TypeSafe key"
               spellCheck={false}
             />
             <Description>
@@ -77,16 +78,16 @@ export function KeyGate({ onSaved, onBrowseSample, sampleBusy }: Props) {
             </Description>
             {error ? <FieldError>{error}</FieldError> : null}
           </TextField>
-          <div className="flex flex-col gap-3">
-            <Button className="pressable" isPending={busy} type="submit">
+          <div className="keygate-actions flex flex-col gap-3 sm:flex-row sm:items-stretch">
+            <Button className="pressable min-h-11 w-full sm:flex-1" isPending={busy} type="submit">
               {busy ? "Saving key…" : "Continue"}
             </Button>
             <Button
-              className="pressable"
+              className="pressable min-h-11 w-full sm:flex-1"
               isDisabled={sampleBusy}
               isPending={sampleBusy}
               type="button"
-              variant="secondary"
+              variant="outline"
               onPress={() => onBrowseSample()}
             >
               {sampleBusy ? "Loading sample…" : "Browse sample results"}

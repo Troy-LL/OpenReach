@@ -15,6 +15,7 @@ import {
 import { hasClientKey } from "./client-key";
 import { ExportBar } from "./ExportBar";
 import { Filters } from "./Filters";
+import { KeyLockedChip } from "./GatedHint";
 import { KeyGate } from "./KeyGate";
 import { PaginationBar } from "./PaginationBar";
 import { PaperCard } from "./PaperCard";
@@ -193,8 +194,14 @@ export function App() {
     }
   }
 
+  const addKeyLink = (
+    <Button className="px-0" variant="ghost" onPress={resetToLanding}>
+      Add a TypeSafe key
+    </Button>
+  );
+
   const searchForm = (
-    <form className="flex flex-col gap-3 sm:flex-row sm:items-center" onSubmit={onSubmit}>
+    <form className="flex flex-col gap-3 sm:flex-row sm:items-stretch" onSubmit={onSubmit}>
       <SuggestField
         disabled={busy || !hasKey}
         value={draft}
@@ -211,15 +218,18 @@ export function App() {
           value={draft}
           onChange={setDraft}
         >
-          <SearchField.Group>
+          <SearchField.Group className="min-w-0 w-full">
             <SearchField.SearchIcon />
-            <SearchField.Input placeholder="Ask anything about the literature…" />
+            <SearchField.Input
+              className="min-w-0 flex-1 overflow-hidden text-ellipsis"
+              placeholder="Ask anything about the literature…"
+            />
             <SearchField.ClearButton />
           </SearchField.Group>
         </SearchField>
       </SuggestField>
       <Button
-        className="pressable shrink-0"
+        className="pressable min-h-11 w-full shrink-0 sm:w-auto"
         isDisabled={!draft.trim() || !hasKey}
         isPending={busy}
         type="submit"
@@ -329,19 +339,14 @@ export function App() {
             <Alert.Content>
               <Alert.Title>Sample results</Alert.Title>
               <Alert.Description>
-                Fixed examples for trying filters. Live scoring needs a TypeSafe
-                key.
+                Fixed examples for trying filters.
+                {!hasKey ? <> {addKeyLink} to search live.</> : null}
               </Alert.Description>
             </Alert.Content>
           </Alert>
-        ) : null}
-        {!hasKey ? (
+        ) : !hasKey ? (
           <p className="text-muted mt-3 mb-0 text-sm">
-            Sample results only.{" "}
-            <Button className="px-0" variant="ghost" onPress={resetToLanding}>
-              Add a TypeSafe key
-            </Button>{" "}
-            to run a live search.
+            {addKeyLink} to run a live search.
           </p>
         ) : null}
       </div>
@@ -403,7 +408,7 @@ export function App() {
                     <input
                       aria-label={`Select ${paper.title}`}
                       checked={selectedIds.has(paper.id)}
-                      className="mt-6 h-4 w-4 shrink-0 accent-[var(--accent)]"
+                      className="mt-5 h-5 w-5 shrink-0 accent-[var(--accent)]"
                       disabled={busy}
                       type="checkbox"
                       onChange={(event) =>
@@ -412,17 +417,21 @@ export function App() {
                     />
                     <div className="min-w-0 flex-1">
                       <PaperCard figure={index + 1} paper={paper} />
-                      <div className="mt-2 flex justify-end">
-                        <Button
-                          aria-label={`Find papers more like ${paper.title}`}
-                          className="pressable"
-                          isDisabled={busy || !hasKey}
-                          size="sm"
-                          variant="ghost"
-                          onPress={() => onMoreLike(paper)}
-                        >
-                          More like this
-                        </Button>
+                      <div className="mt-2 flex min-h-11 items-center justify-end">
+                        {hasKey ? (
+                          <Button
+                            aria-label={`Find papers more like ${paper.title}`}
+                            className="pressable"
+                            isDisabled={busy}
+                            size="sm"
+                            variant="ghost"
+                            onPress={() => onMoreLike(paper)}
+                          >
+                            More like this
+                          </Button>
+                        ) : (
+                          <KeyLockedChip hint="Find related papers after you save a TypeSafe key." />
+                        )}
                       </div>
                     </div>
                   </div>

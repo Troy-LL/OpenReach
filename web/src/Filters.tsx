@@ -86,7 +86,7 @@ export function Filters({ filters, onChange, shown, total }: Props) {
   return (
     <form
       aria-label="Result filters"
-      className="plate sticky top-[4.25rem] flex flex-col gap-4 p-4"
+      className="plate md:sticky md:top-[4.25rem] flex flex-col gap-4 p-4"
       onSubmit={(e) => e.preventDefault()}
     >
       <div className="flex items-baseline justify-between gap-2">

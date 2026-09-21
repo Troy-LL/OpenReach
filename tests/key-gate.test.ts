@@ -22,4 +22,18 @@ describe("KeyGate TypeSafe console footer", () => {
     expect(keyGate).toContain("Browse sample results");
     expect(keyGate).toContain("onBrowseSample");
   });
+
+  it("puts Continue and Browse on one row from 640px, stacked full-width below", () => {
+    expect(keyGate).toMatch(/flex flex-col gap-3 sm:flex-row/);
+    expect(keyGate).toMatch(/min-h-11 w-full sm:flex-1/);
+    expect(keyGate).toMatch(/variant="outline"/);
+    expect(keyGate).not.toMatch(/flex flex-col gap-3">\s*<Button className="pressable"/);
+  });
+
+  it("uses a short TypeSafe placeholder that fits a 390px field", () => {
+    expect(keyGate).toContain('placeholder="Paste your TypeSafe key"');
+    expect(keyGate).not.toContain(
+      'placeholder="Paste the full key from the TypeSafe console"',
+    );
+  });
 });
